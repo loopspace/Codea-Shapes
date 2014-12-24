@@ -37,7 +37,7 @@ function CreateNoiseTexture(w,h,n,o,c)
     o=o or math.random()
     for i=0,w do
         for j=0,h do
-            local u=noise(i*n+o,j*n+o)*255
+            local u=(0.5+noise(i*n+o,j*n+o))*255
             local a=255 if c.a~=255 then a=a*u end
             img:set(i,j,u,u,u,a)
         end
