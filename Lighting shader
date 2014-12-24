@@ -1,0 +1,42 @@
+function lighting()
+    return shader([[
+uniform mat4 modelViewProjection;
+uniform mat4 invModel;
+uniform highp vec3 light;
+uniform lowp float ambient;
+uniform lowp float useTexture;
+attribute vec4 position;
+attribute vec4 color;
+attribute vec2 texCoord;
+attribute vec3 normal;
+varying lowp vec4 vColor;
+varying highp vec2 vTexCoord;
+varying lowp float intensity;
+void main()
+{
+    vColor = color;
+    vTexCoord = texCoord;
+    highp vec4 n = invModel * vec4(normal,0.);
+    intensity = ambient + (1.-ambient) * max(0.,dot(light, normalize(n.xyz)));    
+    gl_Position = modelViewProjection * position;
+}
+]],[[
+precision highp float;
+uniform lowp sampler2D texture;
+uniform lowp float useTexture;
+varying lowp vec4 vColor;
+varying highp vec2 vTexCoord;
+varying lowp float intensity;
+    
+lowp vec4 col;
+    
+void main()
+{
+    if (useTexture == 1.) col = texture2D( texture, vTexCoord );
+    else col = vColor;
+    col.xyz *= intensity;
+    gl_FragColor = col;
+}
+    ]]
+    )
+end
