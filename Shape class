@@ -1,0 +1,129 @@
+--shape class
+    
+function setup()
+    --make some images to put on our shapes
+    stone=readImage("Planet Cute:Stone Block Tall") 
+    stone=stone:copy(1,83,100,75) --get rid of bits of image we don't want
+    starry=readImage("Cargo Bot:Starry Background")
+    noisy=CreateNoiseTexture(50,50,0.3,0,color(200, 90, 200))
+    noisy2=CreateNoiseTexture(50,50,0.4,0,color(255, 0, 0))
+    --create shapes
+    cube=Shapes{shape="Block",texture=noisy,size=10,lighting=true}
+    block=Shapes{shape="Block",texture=stone,size=10,width=10,height=20,depth=5}   
+    pyramid=Shapes{shape="Pyramid",color=color(0,255,0),size=20,height=30,lighting=true} 
+    jewel_texture=Shapes{shape="Jewel",texture=starry,size=15}
+    jewel_color=Shapes{shape="Jewel",color=color(255,255,50),size=15,lighting=true}
+    jewel_noisy=Shapes{shape="Jewel",texture=noisy2,size=15,lighting=true}
+    --do some simple rotation to show the result
+    rot=vec3(0,0,0)  deltaRot=vec3(1,-1.2,1.7)*.2
+end
+color(50, 84, 112, 255)
+function draw()
+    background(150)
+    perspective()
+    camera(0,0,250,0,0,0)
+    rot=rot+deltaRot
+    DrawShape(cube,20,0,0)
+    DrawShape(block,20,50,0)
+    DrawShape(pyramid,20,-50,0)
+    DrawShape(jewel_noisy,-30,0,0)
+    DrawShape(jewel_texture,-30,50,0)
+    DrawShape(jewel_color,-30,-50,0)
+end
+
+function CreateNoiseTexture(w,h,n,o,c)
+    local img=image(w,h)
+    n=n or 0.1
+    o=o or math.random()
+    for i=0,w do
+        for j=0,h do
+            local u=noise(i*n+o,j*n+o)*255
+            local a=255 if c.a~=255 then a=a*u end
+            img:set(i,j,u,u,u,a)
+        end
+    end
+    setContext(img)
+    fill(c.r,c.g,c.b,100)
+    rect(1,1,w,h)
+    setContext()
+    return img
+end
+
+function DrawShape(s,x,y,z)
+    pushMatrix()
+        translate(x,y,z)
+        rotate(rot.x,1,0,0) rotate(rot.y,0,1,0) rotate(rot.z,0,0,1)
+        s:draw()
+    popMatrix()
+end
+
+Shapes=class()
+
+function Shapes:init(t)
+    extendMesh()
+    self.shape=t.shape
+    if not t.mesh then --create mesh if none provided
+        self.mesh=mesh()
+        t.mesh=self.mesh
+    end
+    if t.texture then --read image texture if necessary
+        if type(t.texture)=="string" then t.texture=readImage(t.texture) end
+        self.mesh.texture=t.texture 
+    end
+    --simple cube, parameters = centre, color, size, texture
+    if t.shape=="Block" then
+        t.center=t.center or vec3(0,0,0)
+        t.color=t.color or color(255)
+        t.size=t.size or 1
+        t.width=t.width or t.size
+        t.height=t.height or t.size
+        t.depth=t.depth or t.size
+        --cube expects an 8x1 spritesheet
+        if t.texture and t.texture.width<8*t.texture.height then self:CreateImageCopies(t.texture,8,1) end
+        addCube(t)
+    elseif t.shape=="Pyramid" then
+        t.color=t.color or color(255)
+        t.size=t.size or 1
+        t.startCentre = -t.height/2
+        t.startWidth = -t.size/2
+        t.startHeight = -t.size/2
+        t.endCentre = t.height/2 
+        t.endWidth = 0.1
+        t.endHeight =0.1
+        if t.texture and t.texture.width<8*t.texture.height then self:CreateImageCopies(t.texture,8,1) end
+        addCube(t)
+    elseif t.shape=="Jewel" then
+        t.center=t.center or vec3(0,0,0)
+        t.color=t.color or color(255)
+        t.size=t.size or 1
+        addJewel(t)
+    end
+    
+    if t.lighting then
+        self.mesh.shader = lighting()
+        self.mesh.shader.ambient = t.ambient or 0.3
+        self.mesh.shader.light = (t.lightDirection or vec3(-1,1,1)):normalize()
+        if t.texture then self.mesh.shader.useTexture=1 else self.mesh.shader.useTexture=0 end
+    end
+end
+
+--create texture with several copies of texture, eg for simple cube
+function Shapes:CreateImageCopies(img,nw,nh) --nn, nh are number of copies wide and high
+    local w,h=math.min(50,img.width),math.min(50,img.height)
+    local copyImg=image(w*nw,h*nh)
+    setContext(copyImg)
+    for i=1,nw do
+        for j=1,nh do
+            sprite(img,(i-0.5)*w,(j-0.5)*h,w,h)
+        end
+    end
+    setContext()
+    self.mesh.texture=copyImg
+end
+
+function Shapes:draw()
+    if self.mesh then 
+        if self.mesh.shader then self.mesh.shader.invModel = modelMatrix():inverse():transpose() end
+        self.mesh:draw() 
+    end
+end
