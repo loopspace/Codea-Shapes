@@ -67,9 +67,52 @@ addSphereSegment
 | `colour`/`color` | `color(48,104,159,255)` | Colour of sphere. |
 | `faceted` | `false` | Whether to render the sphere faceted or smoothed (not yet implemented). |
 | `number` | `36` | Number of steps to use to render sphere (twice this for longitude. |
+| `solid` | `true` | Whether to make the sphere solid by filling in the internal sides. |
 | `texOrigin` | `vec2(0,0)` | Origin of region in texture to use. |
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
 
 Specifying the segment can be done in a variety of ways.
 
 `startLatitude`, `endLatitude`, `deltaLatitude`, `startLongitude`, `endLongitude`, `deltaLongitude` specify the latitude and longitude for the segment relative to given axes (only two of the three pieces of information for each need to be given).
+
+addCylinder
+===========
+
+| Option | Default | Description |
+|:-------|:--------|:------------|
+| `mesh` | new mesh | The mesh to add the shape to. |
+| `position` | end of mesh | The place in the mesh at which to add the shape. |
+| `colour`/`color` | white | The colour of the shape. |
+| `faceted` | true | Whether to make it faceted or smooth. |
+| `ends` | `0` | Which ends to fill in (`0` for none, `1` for start, `2` for end, `3` for both) |
+| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this shape. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this shape. |
+
+There are various ways to specify the dimensions of the cylinder.
+If given together, the more specific overrides the more general.
+
+`radius` and `height` (`number`s) can be combined with `axes` (table of three `vec3`s) to specify the dimensions, where the first axis vector lies along the cylinder.  The vector `origin` then locates the cylinder in space.
+
+`startCentre`/`startCenter` (a `vec3`), `startWidth` (`number` or `vec3`), `startHeight` (`number` or `vec3`), `startRadius` (`number`) specify the dimensions at the start of the cylinder (if numbers, they are taken with respect to certain axes).
+
+Similarly named options control the other end.
+
+If axes are needed, these can be supplied via the `axes` option.
+If just the `axis` option is given (a single `vec3`), this is the direction along the cylinder.
+Other directions (if needed) are found by taking orthogonal vectors to this axis.
+
+addPyramid
+==========
+
+| Option       | Default                  | Description |
+|:-------------|:-------------------------|:------------|
+| `mesh`         | new mesh                 | The mesh to add the shape to. |
+| `position`     | end of mesh              | The position in the mesh at which to start the shape. |
+| `origin`       | `vec3(0,0,0)`            | The origin (or centre) of the shape. |
+| `axis`         | `vec3(0,1,0)`            | The axis specifies the direction of the jewel. |
+| `aspect`       | 1                        | The ratio of the height to the diameter of the gem. |
+| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
+| `colour`/`color` | `color(255, 255, 255, 255)` | The colour of the jewel. |
+| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+
