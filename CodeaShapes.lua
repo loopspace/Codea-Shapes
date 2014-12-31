@@ -66,8 +66,8 @@ function setup()
     }))
     print("Returned values of addSphereSegment:", m:addSphereSegment({
         origin = vec3(-4,0,0),
-        texOrigin = vec2(0.8,0),
-        texSize = vec2(.2,1),
+        texOrigin = vec2(0,0),
+        texSize = vec2(.5,1),
         colour = color(255, 255, 255, 255),
         startLatitude = 45,
         deltaLatitude = 90,
@@ -86,8 +86,8 @@ function setup()
     }))
     print("Returned values of addSphereSegment:", m:addSphereSegment({
         origin = vec3(4,0,0),
-        texOrigin = vec2(0.8,0),
-        texSize = vec2(.1,1),
+        texOrigin = vec2(0.7,0),
+        texSize = vec2(.3,1),
         colour = color(255, 255, 255, 255),
         incoming = vec3(1,1,0),
         outgoing = vec3(0,0,1),
@@ -121,7 +121,22 @@ function setup()
         number = 15,
         height = 0,
         startAngle = 90,
-        deltaAngle = 120
+        deltaAngle = 180
+    }))
+    print("Returned values of addCylinder:", m:addCylinder({
+        startCentre = vec3(-4,2,0),
+        texOrigin = vec2(0,0),
+        texSize = vec2(.5,1),
+        colour = color(255, 255, 255, 255),
+        startRadius = .5,
+        endRadius = 1,
+        axis = vec3(0,1,0),
+        faceted = false,
+        number = 15,
+        height = 2,
+        startAngle = 90,
+        deltaAngle = 180,
+        solid = true
     }))
     print("Final mesh size:",m.size)
 end
@@ -144,7 +159,7 @@ function draw()
     m:draw()
 end
 
-local __doJewel, __doSuspension, __doPyramid, __doCube, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly
+local __doJewel, __doSuspension, __doPyramid, __doCube, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder
 
 --[[
 | Option       | Default                  | Description |
@@ -216,7 +231,7 @@ function __doJewel(m,p,n,o,a,col,to,ts)
         c,d = cs*c + sn*d,-sn*c + cs*d
         tc,td = cs*tc + sn*td,-sn*tc + cs*td
     end
-    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true)
+    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true,true)
 end
 
 --[[
@@ -233,12 +248,13 @@ col colour
 to offset of texture region (vec2)
 ts size of texture region (vec2)
 f faceted
+cl closed curve or not
 --]]
-function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f)
+function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f,cl)
     local tu
     for i=1,2 do
         tu = to+vec2(ts.x*(i*.5-.25),ts.y*.5)
-        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f)
+        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f,cl)
     end
     return p
 end
@@ -258,32 +274,87 @@ col colour
 to texture offset
 ts not used
 f faceted or not
+cl closed curve or not
 --]]
-function __doCone(m,p,n,o,a,v,t,col,to,ts,f)
-    local j,nml,nmla,nmlb,nmlc,tu
+function __doCone(m,p,n,o,a,v,t,col,to,ts,f,cl)
+    if f then
+        if cl then
+            return __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts)
+        else
+            return __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts)
+        end
+    else
+        if cl then
+            return __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts)
+        else
+            return __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts)
+        end
+    end
+end
+
+function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts)
+    local j,nml
     for k=1,n do
         j = k%n + 1
-        if not f then
-            nmla = __discreteNormal(v[k],o,v[(k-2)%n+1],a,v[j])
-            nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-            nmlb = vec3(0,0,0)
-        else
-            nmlb = (v[k] - a):cross(v[j] - a)
-            if nmlb:dot(a - o) < 0 then
-                nmlb = -nmlb
-            end
-            nmlb = nmlb:normalize()
-            nmla = nmlb
-            nmlc = nmlb
+        nml = (v[k] - a):cross(v[j] - a)
+        if nml:dot(a - o) < 0 then
+            nml = -nml
         end
+        nml = nml:normalize()
+        __addTriangle(m,p,v[j],v[k],a,col,col,col,nml,nml,nml,to+t[j],to+t[k],to)
+        p = p + 3
+    end
+    return p
+end
+
+function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts)
+    local j,nml
+    for k=1,n-1 do
+        j = k + 1
+        nml = (v[k] - a):cross(v[j] - a)
+        if nml:dot(a - o) < 0 then
+            nml = -nml
+        end
+        nml = nml:normalize()
+        __addTriangle(m,p,v[j],v[k],a,col,col,col,nml,nml,nml,to+t[j],to+t[k],to)
+        p = p + 3
+    end
+    return p
+end
+
+function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts)
+    local j,nmla,nmlb,nmlc
+    nmlb = vec3(0,0,0)
+    nmlc = __discreteNormal(v[1],o,v[n],a,v[2])
+    for k=1,n do
+        j = k%n + 1
+        nmla = nmlc
+        nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
         __addTriangle(m,p,v[j],v[k],a,col,col,col,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
+function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts)
+    local j,nmla,nmlb,nmlc
+    nmlb = vec3(0,0,0)
+    nmlc = __discreteNormal(v[1],o,a,v[2])
+    for k=1,n-2 do
+        j = k + 1
+        nmla = nmlc
+        nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
+        __addTriangle(m,p,v[j],v[k],a,col,col,col,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
+        p = p + 3
+    end
+    nmla = nmlc
+    nmlc = __discreteNormal(v[n],o,v[n-1],a)
+    __addTriangle(m,p,v[n],v[n-1],a,col,col,col,nmlc,nmla,nmlb,to+t[n],to+t[n-1],to)
+    return p + 3
+end
+
 --[[
-This forms a surface which boundary a given curve by forming a cone with the barycentre of the curve as its apex.
+This forms a surface which has boundary a given curve by forming a cone with the barycentre of the curve as its apex.
 
 m mesh
 p position in mesh
@@ -295,15 +366,23 @@ col colour
 to texture offset
 ts not used
 f faceted or not
+cl closed curve or not
 --]]
-function __doPoly(m,p,n,o,v,t,col,to,ts,f)
-    local a,r = vec3(0,0,0),0
+function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl)
+    local a,b,r = vec3(0,0,0),vec2(0,0),0
     for k,u in ipairs(v) do
         a = a + u
         r = r + 1
     end
     a = a / r
-    return __doCone(m,p,n,o,a,v,t,col,to,ts,f)
+    for k,u in ipairs(t) do
+        b = b + u
+    end
+    b = b / r
+    for k=1,r do
+        t[k] = t[k] - b
+    end
+    return __doCone(m,p,n,o,a,v,t,col,to+b,ts,f,cl)
 end
 
 --[[
@@ -339,7 +418,13 @@ function addCylinder(t)
     local ip = p
     local col = t.colour or t.color or color(255, 255, 255, 255)
     local f = true
-    local ends = t.ends or 0
+    local ends
+    local solid = t.solid
+    if solid then
+        ends = t.ends or 3
+    else
+        ends = t.ends or 0
+    end
     if t.faceted ~= nil then
         f = t.faceted
     end
@@ -403,26 +488,37 @@ function addCylinder(t)
     elseif type(ej) == "number" then
         ej = ej*a:cross(ei):normalize()
     end
-    o = t.origin or (sc+ec)/2
 
     local n = t.size or 12
     local sa,ea,da = __threeFromTwo(t.startAngle,t.endAngle,t.deltaAngle,0,360,360)
+    local closed
+    if da == 360 then
+        closed = true
+        solid = false
+    else
+        closed = false
+    end
     sa = math.rad(sa)
     ea = math.rad(ea)
     da = math.rad(da)/n
-    ts.x = ts.x /  (math.floor((ends+1)/2)+1)
+    o = t.origin or (sc + math.cos((sa+ea)/2)*si + math.sin((sa+ea)/2)*sj + ec + math.cos((sa+ea)/2)*ei + math.sin((sa+ea)/2)*ej)/2
+    local ss = 1 + math.floor((ends+1)/2)
+    if solid then
+        ss = ss + 2 
+    end
+    ts.x = ts.x / ss
     local cs,sn,ti,tj
     ti,tj = vec2(ts.x/2,0),vec2(0,ts.y/2)
-    cs = math.cos(sa-da)
-    sn = math.sin(sa-da)
+    cs = math.cos(sa)
+    sn = math.sin(sa)
     si,sj = cs*si + sn*sj, -sn*si + cs*sj
     ei,ej = cs*ei + sn*ej, -sn*ei + cs*ej
     ti,tj = cs*ti + sn*tj, -sn*ti + cs*tj
-    local u,v,tu,tv,tw = {},{},{},{},{}
-
+    local u,v,tu,tv,tw,cnrs = {},{},{},{},{},{}
+    cnrs[1] = {sc,sc+si,ec+ei,ec}
     cs = math.cos(da)
     sn = math.sin(da)
-    for k=-1,n+1 do
+    for k=0,n do
         table.insert(u,sc+si)
         table.insert(v,ec+ei)
         table.insert(tu,to + vec2(ts.x*k/n,0))
@@ -432,19 +528,34 @@ function addCylinder(t)
         ei,ej = cs*ei + sn*ej, -sn*ei + cs*ej
         ti,tj = cs*ti + sn*tj, -sn*ti + cs*tj
     end
+    cnrs[2] = {sc, sc+cs*si - sn*sj, ec+cs*ei - sn*ej, ec}
     local size = 6*n + math.floor((ends+1)/2)*3*n
+    if closed then
+        size = size + 6 + math.floor((ends+1)/2)*3
+    elseif solid then
+        size = size + 24
+    end
     if p - 1 + size > m.size then
         m:resize(p-1+size)
     end
-    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f)
-    to = to + ts/2 
+    n = n + 1
+    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f,closed)
+    to = to + ts/2
+    if solid and not closed then
+        local tex = {-ts/2,vec2(ts.x/2,-ts.y/2),ts/2,vec2(-ts.x/2,ts.y/2)}
+        for i=1,2 do
+            to.x = to.x + ts.x
+            p = __doPoly(m,p,4,o,cnrs[i],tex,col,to,ts,f,true)
+        end
+    end
+
     if ends%2 == 1 then
-        to = to + vec2(ts.x,0)
-        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f)
+        to.x = to.x + ts.x
+        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f,closed)
     end
     if ends >= 2 then
-        to = to + vec2(ts.x,0)
-        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f)
+        to.x = to.x + ts.x
+        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f,closed)
     end
     return m,ip, p
 end
@@ -463,48 +574,105 @@ col colour
 to offset of texture region (vec2)
 ts size of texture region (vec2)
 f faceted
+cl closed
 --]]
-function __doCylinder(m,p,n,o,u,v,ut,vt,col,f)
-    local i,j,nv,nu
-    nv,nu = {},{}
-    for k=2,n+1 do
-        j = k + 1
-        i = k - 1
-        if not f then
-            if not nv[k] then
-                nv[k] = __discreteNormal(v[k],o,v[i],u[k],v[j])
-            end
-            if not nu[k] then
-                nu[k] = __discreteNormal(u[k],o,u[i],v[k],u[j])
-            end
-            i = j+1
-            if not nv[j] then
-                nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
-            end
-            if not nu[j] then
-                nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-            end
-            __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
-            p = p + 3
-            __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
-            p = p + 3
+function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl)
+    if f then
+        if cl then
+            return __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col)
         else
-            nu = (u[j] - u[k]):cross(v[k] - u[k]):normalize()
-            nv = (v[j] - v[k]):cross(u[k] - v[k]):normalize()
-            if nu:dot(u[k]-o) < 0 then
-                nu = -nu
-            end
-            if nv:dot(v[k]-o) < 0 then
-                nv = -nv
-            end
-            __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv,nv,nv,vt[j],vt[k],ut[j])
-            p = p + 3
-            __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nu,nu,nu,vt[k],ut[j],ut[k])
-            p = p + 3
+            return __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col)
         end
+    else
+        if cl then
+            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col)
+        else
+            return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col)
+        end
+    end
+end
+
+function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col)
+    local i,j,nv,nu
+    for k=1,n do
+        j = k%n + 1
+        nu = (u[j] - u[k]):cross(v[k] - u[k]):normalize()
+        nv = (v[j] - v[k]):cross(u[k] - v[k]):normalize()
+        if nu:dot(u[k]-o) < 0 then
+            nu = -nu
+        end
+        if nv:dot(v[k]-o) < 0 then
+            nv = -nv
+        end
+        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv,nv,nv,vt[j],vt[k],ut[j])
+        p = p + 3
+        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nu,nu,nu,vt[k],ut[j],ut[k])
+        p = p + 3
     end
     return p
 end
+
+function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col)
+    local i,j,nv,nu
+    for k=1,n-1 do
+        j = k + 1
+        nu = (u[j] - u[k]):cross(v[k] - u[k]):normalize()
+        nv = (v[j] - v[k]):cross(u[k] - v[k]):normalize()
+        if nu:dot(u[k]-o) < 0 then
+            nu = -nu
+        end
+        if nv:dot(v[k]-o) < 0 then
+            nv = -nv
+        end
+        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv,nv,nv,vt[j],vt[k],ut[j])
+        p = p + 3
+        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nu,nu,nu,vt[k],ut[j],ut[k])
+        p = p + 3
+    end
+    return p
+end
+
+function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col)
+    local i,j,nv,nu
+    nv,nu = {},{}
+    nv[1] = __discreteNormal(v[1],o,v[n],u[1],v[2])
+    nu[1] = __discreteNormal(u[1],o,u[n],v[1],u[2])
+    for k=1,n do
+        j = k%n + 1
+        i = j%n + 1
+        nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
+        nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
+        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
+        p = p + 3
+        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
+        p = p + 3
+    end
+    return p
+end
+
+function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col)
+    local i,j,nv,nu
+    nv,nu = {},{}
+    nv[1] = __discreteNormal(v[1],o,u[1],v[2])
+    nu[1] = __discreteNormal(u[1],o,v[1],u[2])
+    for k=1,n-2 do
+        j = k + 1
+        i = j + 1
+        nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
+        nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
+        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
+        p = p + 3
+        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
+        p = p + 3
+    end
+    nv[n] = __discreteNormal(v[n],o,v[n-1],u[n])
+    nu[n] = __discreteNormal(u[n],o,u[n-1],v[n])
+    __addTriangle(m,p,v[n],v[n-1],u[n],col,col,col,nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
+    p = p + 3
+    __addTriangle(m,p,v[n-1],u[n],u[n-1],col,col,col,nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
+    return p+3
+end
+
 
 --[[
 This works out a normal vector for a vertex in a triangulated surface by taking an average of the triangles in which it appears.
@@ -581,7 +749,7 @@ function addPyramid(t)
     if p > m.size - 6*n then
         m:resize(p + 6*n-1)
     end
-    return m,p,__doPyramid(m,p,n,o,a,c,to,ts,f)
+    return m,p,__doPyramid(m,p,n,o,a,c,to,ts,f,true)
 end
 
 --[[
@@ -603,23 +771,17 @@ function __doPyramid(m,p,n,o,a,col,to,ts,f)
     local sn = math.sin(th)
     local b,c,d,tb,tc,td,tex,pol
     tex,pol={},{}
-    b = a[2]
     c = cs*a[2] + sn*a[3]
     d = -sn*a[2] + cs*a[3]
-    tb = vec2(ts.x*.25,0)
     tc = cs*vec2(ts.x*.25,0) + sn*vec2(0,ts.y*.5)
     td = -sn*vec2(ts.x*.25,0) + cs*vec2(0,ts.y*.5)
     for i = 1,n do
         table.insert(pol,o+c)
         table.insert(tex,tc)
-        b = c
-        c = cs*c + sn*d
-        d = -sn*b + cs*d
-        tb = tc
-        tc = cs*tc + sn*td
-        td = -sn*tb + cs*td
+        c,d = cs*c + sn*d, -sn*c + cs*d
+        tc,td = cs*tc + sn*td, -sn*tc + cs*td
     end
-    return __doSuspension(m,p,n,o,{o+a[1],o},pol,tex,col,to,ts,f)
+    return __doSuspension(m,p,n,o+a[1]/2,{o+a[1],o},pol,tex,col,to,ts,f,true)
 end
 
 -- cube faces are in binary order: 000, 001, 010, 011 etc
@@ -909,47 +1071,66 @@ function addSphereSegment(t)
         size = size - 3*np
     end
     if solid then
-        size = size + 6*np + 6*nt
-        if st == 0 then
-            size = size - 3*np
+        size = size + 6*(nt+3)
+        local ss = 3
+        if st ~= 0 then
+            size = size + 3*np
+            ss = ss + 1
         end
-        if et >= math.pi then
-            size = size - 3*np
+        if et < math.pi then
+            size = size + 3*np
+            ss = ss + 1
         end
-        ts.x = ts.x/2
+        ts.x = ts.x/ss
     end
     if p > m.size - size then
         m:resize(p-1+size)
     end
     p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts)
     if solid then
-        to = to + vec2(ts.x,0)
-        local v,tex,nv = {},{},2*nt
-        for k=1,nt do
+        to.x = to.x + ts.x
+        local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
+        local v,tex = {},{}
+        local tl,tu = math.cos(st), math.cos(et) - math.cos(st)
+        table.insert(v,o + math.cos(st)*a[3])
+        table.insert(tex,vec2(ts.x,0))
+        for k=0,nt do
             table.insert(v,o+math.sin(st+k*dt)*math.cos(sp)*a[1] + math.sin(st+k*dt)*math.sin(sp)*a[2] + math.cos(st+k*dt)*a[3])
-            table.insert(tex,vec2(0,ts.y*k/nt))
+            table.insert(tex,vec2(ts.x*(1-math.sin(st+k*dt)),ts.y*(math.cos(st+k*dt) - tl)/tu))
+        end
+        table.insert(v,o + math.cos(et)*a[3])
+        table.insert(tex,ts)
+        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true)
+        to.x = to.x + ts.x
+        v,tex = {},{}
+        table.insert(v,o + math.cos(st)*a[3])
+        table.insert(tex,vec2(0,0))
+        for k=0,nt do
+            table.insert(v,o+math.sin(st+k*dt)*math.cos(ep)*a[1] + math.sin(st+k*dt)*math.sin(ep)*a[2] + math.cos(st+k*dt)*a[3])
+            table.insert(tex,vec2(ts.x*math.sin(st+k*dt),ts.y*(math.cos(st+k*dt) - tl)/tu))
+        end
+        table.insert(v,o + math.cos(et)*a[3])
+        table.insert(tex,vec2(0,ts.y))
+        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true)
+        to = to + ts/2
+        if st ~= 0 then
+            to.x = to.x + ts.x
+            v,tex = {},{}
+            for k=0,np do
+                table.insert(v,o+math.sin(st)*math.cos(sp+k*dp)*a[1] + math.sin(st)*math.sin(sp+k*dp)*a[2] + math.cos(st)*a[3])
+                table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
+            end
+            p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false)
         end
         if et < math.pi then
-            for k=1,np do
+            to.x = to.x + ts.x
+            v,tex = {},{}
+            for k=0,np do
                 table.insert(v,o+math.sin(et)*math.cos(sp+k*dp)*a[1] + math.sin(et)*math.sin(sp+k*dp)*a[2] + math.cos(et)*a[3])
-                table.insert(tex,vec2(ts.x*k/np,ts.y))
+                table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
-            nv = nv + np
+            p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false)
         end
-        for k=1,nt do
-            table.insert(v,o+math.sin(et-k*dt)*math.cos(ep)*a[1] + math.sin(et-k*dt)*math.sin(ep)*a[2] + math.cos(et-k*dt)*a[3])
-            table.insert(tex,vec2(ts.x,ts.y*(1-k/nt)))
-        end
-        if st ~= 0 then
-            for k=1,np do
-                table.insert(v,o+math.sin(st)*math.cos(ep-k*dp)*a[1] + math.sin(st)*math.sin(ep-k*dp)*a[2] + math.cos(st)*a[3])
-                table.insert(tex,vec2(ts.x*(1-k/np),0))
-            end
-            nv = nv + np
-        end
-        local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
-        print(unpack(tex))
-        p = __doCone(m,p,nv,intl,o,v,tex,c,to,ts,f)
     end
     return m,ip,p
 end
