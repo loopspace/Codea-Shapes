@@ -2,70 +2,51 @@
     
 function setup()
     displayMode(FULLSCREEN)
-    --make some images to put on our shapes
-    stone=readImage("Planet Cute:Stone Block Tall") 
-    stone=stone:copy(1,83,100,75) --get rid of bits of image we don't want
-    starry=readImage("Cargo Bot:Starry Background")
-    noisy=CreateNoiseTexture(48,48,0.3,0,color(200, 90, 200))
-    noisy_red=CreateNoiseTexture(48,48,0.4,0,color(255, 0, 0))
-    --globe=readImage("Documents:EarthLights")
-    --create shapes
+    --get some images to use with our shapes
+    CreateImages()
+    --create shapes using colours and images
     cube=Shapes{shape="Block",texture=noisy,size=20,lighting=true}
     block=Shapes{shape="Block",texture=stone,size=20,width=20,height=40,depth=10}   
     pyramid=Shapes{shape="Pyramid",color=color(0,255,0),size=20,height=30,lighting=true} 
-    jewel_texture=Shapes{shape="Jewel",texture=starry,size=15}
+    jewel_texture=Shapes{shape="Jewel",texture=green_strip,size=15}
     jewel_color=Shapes{shape="Jewel",color=color(255,255,50),size=15,lighting=true}
-    jewel_noisy=Shapes{shape="Jewel",texture=noisy_red,size=15,lighting=true}
-    sphere=Shapes{shape="Sphere",color=color(120,165,200),size=15,lighting=true}
-    --sphere_globe=Shapes{shape="Sphere",texture=globe,size=60}
-    sphere_segment=Shapes{shape="Sphere Segment",color=color(0,255,0),size=15,lighting=true,
-                    startLatitude=0,endLatitude=90}
-    --do some simple rotation to show the result
+    jewel_noisy=Shapes{shape="Jewel",texture=purple_strip,size=15,lighting=true}
+    sphere=Shapes{shape="Sphere",texture=blue_cloud,size=15,lighting=true}
+    sphere_pool=Shapes{shape="Sphere",texture=poolBall,size=15}
+    cylinder=Shapes{shape="Cylinder",color=color(187, 89, 153, 255),radius=10,height=20,
+                    faceted=false,lighting=true}
+    pyramid=Shapes{shape="Pyramid",texture=starry,size=15}
+    --set up some simple rotation to show the result
     rot=vec3(0,0,0)  deltaRot=vec3(1,-1.2,1.7)*.2
 end
---color(120, 163, 198, 255)
+
 function draw()
     background(150)
     perspective()
     camera(0,0,250,0,0,0)
     rot=rot+deltaRot
-    local dx,dy=40,50
-    DrawShape(cube,dx*2,0,0)
-    DrawShape(block,dx*2,dy,0)
-    DrawShape(pyramid,dx*2,-dy,0)
-    DrawShape(jewel_noisy,dx,0,0)
-    DrawShape(jewel_texture,dx,dy,0)
-    DrawShape(jewel_color,dx,-dy,0)
-    DrawShape(sphere_segment,-dx*2.5,-dy*1.25,0)
-    DrawShape(sphere,-dx,-dy*1.25,0)
-    --DrawShape(sphere_globe,-dx*1.5,dy/2,0)
+    rotate(rot.x,1,0,0) rotate(rot.y,0,1,0) rotate(rot.z,0,0,1)
+    local dx,dy=55,55
+    DrawShape(cube,-dx,0,0)
+    DrawShape(block,-dx,dy,0)
+    DrawShape(pyramid,-dx,-dy,0)
+    DrawShape(jewel_noisy,0,0,0)
+    DrawShape(jewel_texture,0,dy,0)
+    DrawShape(jewel_color,0,-dy,0)
+    DrawShape(cylinder,dx,-dy,0)
+    DrawShape(sphere,dx,0,0)
+    DrawShape(sphere_pool,dx,dy,0)    
 end
 
-function CreateNoiseTexture(w,h,n,o,c)
-    local img=image(w,h)
-    n=n or 0.1
-    o=o or math.random()
-    for i=1,w do
-        for j=1,h do
-            local u=(0.5+noise(i*n+o,j*n+o))*255
-            local a=255 if c.a~=255 then a=a*u end
-            img:set(i,j,u,u,u,a)
-        end
-    end
-    setContext(img)
-    fill(c.r,c.g,c.b,100)
-    rect(0,0,w,h)
-    setContext()
-    return img
-end
-
+--this isn't necessary if you only have a few shapes, it just saves typing
 function DrawShape(s,x,y,z)
     pushMatrix()
         translate(x,y,z)
-        rotate(rot.x,1,0,0) rotate(rot.y,0,1,0) rotate(rot.z,0,0,1)
         s:draw()
     popMatrix()
 end
+
+-- Shape class ---
 
 Shapes=class()
 
@@ -90,18 +71,15 @@ function Shapes:init(t)
         --cube expects an 6x1 spritesheet
         if t.texture and t.texture.width<6*t.texture.height then self:CreateImageCopies(t.texture,6,1) end
         addCube(t)
-    elseif t.shape=="Pyramid" then
-        t.startCentre = -t.height/2
-        t.startWidth = -t.size/2
-        t.startHeight = -t.size/2
-        t.endCentre = t.height/2 
-        t.endWidth = 0.1
-        t.endHeight =0.1
-        if t.texture and t.texture.width<6*t.texture.height then self:CreateImageCopies(t.texture,6,1) end
-        addCube(t)
     elseif t.shape=="Jewel" then addJewel(t)
     elseif t.shape=="Sphere" then addSphere(t)
     elseif t.shape=="Sphere Segment" then addSphereSegment(t)
+    elseif t.shape=="Cylinder" then 
+        t.radius=t.radius or t.size/2
+        t.height=t.height or t.size
+        t.ends=t.ends or 1
+        addCylinder(t)
+    elseif t.shape=="Pyramid" then addPyramid(t)
     end
     
     if t.lighting then
@@ -131,4 +109,62 @@ function Shapes:draw()
         if self.mesh.shader then self.mesh.shader.invModel = modelMatrix():inverse():transpose() end
         self.mesh:draw() 
     end
+end
+
+---- image code --------
+
+function CreateImages()
+    stone=readImage("Planet Cute:Stone Block Tall") 
+    stone=stone:copy(1,83,100,75) --get rid of bits of image we don't want
+    starry=readImage("Cargo Bot:Starry Background")
+    blue_cloud=readImage("SpaceCute:Background")
+    noisy=CreateNoiseTexture(48,48,0.3,0,color(200, 90, 200))
+    noisy_red=CreateNoiseTexture(48,48,0.4,0,color(255, 0, 0))
+    --create pool ball texture for sphere
+    local w=96 local h=w/2 --width must be 2x height
+    poolBall=image(w,h)
+    setContext(poolBall)
+    background(255,0,0)
+    fill(255)
+    ellipse(w/4,h/2,w/6) ellipse(w*3/4,h/2,w/6)
+    fill(0)
+    fontSize(w/8)
+    text("3",w/4,h/2) text("3",w*3/4,h/2)
+    setContext()
+    ----create green strip texture
+    green_strip=image(10,10)
+    setContext(green_strip)
+    background(92, 190, 75, 255)
+    stroke(84, 147, 76, 255) strokeWidth(1)
+    for i=1,10,2 do
+        line(1,i,10,i)  
+    end
+    setContext()
+    ----create blue/purple strip texture
+    purple_strip=image(20,20)
+    setContext(purple_strip)
+    background(90, 129, 202, 255)
+    stroke(180, 111, 200, 255) strokeWidth(2)
+    for i=1,20,2 do
+        line(i,1,i,10)  
+    end
+    setContext()
+end
+
+function CreateNoiseTexture(w,h,n,o,c)
+    local img=image(w,h)
+    n=n or 0.1
+    o=o or math.random()
+    for i=0,w+1 do
+        for j=0,h+1 do
+            local u=(0.5+noise(i*n+o,j*n+o))*255
+            local a=255 if c.a~=255 then a=a*u end
+            img:set(i,j,u,u,u,a)
+        end
+    end
+    setContext(img)
+    fill(c.r,c.g,c.b,100)
+    rect(0,0,w+1,h+1)
+    setContext()
+    return img
 end
