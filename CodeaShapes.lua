@@ -11,7 +11,7 @@ function setup()
     m.shader = lighting()
     m.shader.ambient = .5
     m.shader.light = vec3(0,5,-1):normalize()
-    m.shader.useTexture = 1
+    m.shader.useTexture = 0
     local w,h = spriteSize("Cargo Bot:Crate Blue 1")
     img = image(10*w,h)
     setContext(img)
@@ -27,11 +27,13 @@ function setup()
     sprite("Cargo Bot:Crate Red 3",8*w,0)
     sprite("Cargo Bot:Crate Green 3",9*w,0)
     setContext()
-    m.texture = img
+    -- m.texture = img
+    local light = vec3(1,1,0)/3
     print("Initial mesh size:", m.size)
     print("Returned values of addJewel:", m:addJewel({
         texOrigin = vec2(0,0),
-        texSize = vec2(.2,1)
+        texSize = vec2(.2,1),
+        light = light
     }))
     print("Returned values of addPyramid:", m:addPyramid({
         texOrigin = vec2(0,0),
@@ -39,7 +41,8 @@ function setup()
         origin = vec3(0,2,0),
         height = 2,
         sides = 30,
-        faceted = false
+        faceted = false,
+        light = light
     }))
     print("Returned values of addPyramid:", m:addPyramid({
         texOrigin = vec2(0,0),
@@ -47,22 +50,25 @@ function setup()
         origin = vec3(2,2,0),
         sides = 30,
         height = 2,
-        faceted = true
+        faceted = true,
+        light = light
     }))
-    print("Returned values of addCube:", m:addCube({
+    print("Returned values of addBlock:", m:addBlock({
         centre = vec3(2,0,0),
         size = 2,
         texOrigin = vec2(.2,0),
         colour = color(255, 255, 255, 255),
-        texSize = vec2(.6,1)
+        texSize = vec2(.6,1),
+        light = light
     }))
-    print("Returned values of addCube:", m:addCube({
+    print("Returned values of addBlock:", m:addBlock({
         centre = vec3(6,0,0),
         size = 2,
         texOrigin = vec2(.2,0),
         texSize = vec2(.1,1),
         colour = color(255, 255, 255, 255),
-        singleImage = true
+        singleImage = true,
+        light = light
     }))
     print("Returned values of addSphereSegment:", m:addSphereSegment({
         origin = vec3(-4,0,0),
@@ -74,7 +80,8 @@ function setup()
         startLongitude = 45,
         deltaLongitude = 90,
         number = 6,
-        faceted = true
+        faceted = true,
+        light = light
     }))
     print("Returned values of addSphere:", m:addSphere({
         origin = vec3(-2,0,0),
@@ -82,7 +89,8 @@ function setup()
         texSize = vec2(.1,1),
         colour = color(255, 255, 255, 255),
         number = 6,
-    -- faceted = true
+    -- faceted = true,
+        light = light
     }))
     print("Returned values of addSphereSegment:", m:addSphereSegment({
         origin = vec3(4,0,0),
@@ -92,20 +100,22 @@ function setup()
         incoming = vec3(1,1,0),
         outgoing = vec3(0,0,1),
         faceted = true,
-        number = 6
+        number = 6,
+        light = light
     }))
     print("Returned values of addCylinder:", m:addCylinder({
-        startCentre = vec3(4,2,0),
+        origin = vec3(4,2,0),
         texOrigin = vec2(0,0),
         texSize = vec2(.3,1),
         colour = color(255, 255, 255, 255),
-        startRadius = .5,
-        endRadius = 1,
-        axis = vec3(0,1,0),
+    -- startRadius = .5,
+    -- endRadius = 1,
+    -- axis = vec3(0,1,0),
         faceted = false,
         number = 15,
         height = 2,
-        ends = 3
+        ends = 3,
+        light = light
     }))
     print("Returned values of addCylinder:", m:addCylinder({
         startCentre = vec3(6,2,0),
@@ -121,7 +131,8 @@ function setup()
         number = 15,
         height = 0,
         startAngle = 90,
-        deltaAngle = 180
+        deltaAngle = 180,
+        light = light
     }))
     print("Returned values of addCylinder:", m:addCylinder({
         startCentre = vec3(-4,2,0),
@@ -136,7 +147,19 @@ function setup()
         height = 2,
         startAngle = 90,
         deltaAngle = 180,
-        solid = true
+        solid = true,
+        light = light
+    }))
+    print("Returned values of addSphereSegment:", m:addSphereSegment({
+        origin = vec3(-2,2,0),
+        texOrigin = vec2(0.7,0),
+        texSize = vec2(.3,1),
+        colour = color(255, 255, 255, 255),
+        faceted = true,
+        number = 6,
+    -- startLatitude=0,deltaLatitude=180,
+        startLongitude=30,deltaLongitude=100,
+        light = light
     }))
     print("Final mesh size:",m.size)
 end
@@ -159,7 +182,7 @@ function draw()
     m:draw()
 end
 
-local __doJewel, __doSuspension, __doPyramid, __doCube, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder
+local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder
 
 --[[
 | Option       | Default                  | Description |
@@ -175,7 +198,12 @@ local __doJewel, __doSuspension, __doPyramid, __doCube, __addTriangle, __doSpher
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
 --]]
 function addJewel(t)
-    local m = t.mesh or mesh()
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or vec3(0,0,0)
@@ -198,7 +226,15 @@ function addJewel(t)
     if p > m.size - 12*n then
         m:resize(p + 12*n-1)
     end
-    return m,p,__doJewel(m,p,n,o,a,c,to,ts)
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
+    end
+    if ret then
+        return m,p,__doJewel(m,p,n,o,a,c,to,ts,l)
+    else
+        return m
+    end
 end
 
 --[[
@@ -212,8 +248,9 @@ a axes (table of vec3s)
 col colour
 to offset of texture region (vec2)
 ts size of texture region (vec2)
+l light vector
 --]]
-function __doJewel(m,p,n,o,a,col,to,ts)
+function __doJewel(m,p,n,o,a,col,to,ts,l)
     local th = math.pi/n
     local cs = math.cos(th)
     local sn = math.sin(th)
@@ -231,7 +268,7 @@ function __doJewel(m,p,n,o,a,col,to,ts)
         c,d = cs*c + sn*d,-sn*c + cs*d
         tc,td = cs*tc + sn*td,-sn*tc + cs*td
     end
-    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true,true)
+    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true,true,l)
 end
 
 --[[
@@ -249,12 +286,13 @@ to offset of texture region (vec2)
 ts size of texture region (vec2)
 f faceted
 cl closed curve or not
+l light vector
 --]]
-function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f,cl)
+function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f,cl,l)
     local tu
     for i=1,2 do
         tu = to+vec2(ts.x*(i*.5-.25),ts.y*.5)
-        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f,cl)
+        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f,cl,l)
     end
     return p
 end
@@ -275,25 +313,27 @@ to texture offset
 ts not used
 f faceted or not
 cl closed curve or not
+l light vector
 --]]
-function __doCone(m,p,n,o,a,v,t,col,to,ts,f,cl)
+function __doCone(m,p,n,o,a,v,t,col,to,ts,f,cl,l)
     if f then
         if cl then
-            return __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts)
+            return __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
         else
-            return __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts)
+            return __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
         end
     else
         if cl then
-            return __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts)
+            return __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
         else
-            return __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts)
+            return __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
         end
     end
 end
 
-function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts)
-    local j,nml
+function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
+    local j,nml,c,ll
+    ll = l:len()
     for k=1,n do
         j = k%n + 1
         nml = (v[k] - a):cross(v[j] - a)
@@ -301,14 +341,16 @@ function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts)
             nml = -nml
         end
         nml = nml:normalize()
-        __addTriangle(m,p,v[j],v[k],a,col,col,col,nml,nml,nml,to+t[j],to+t[k],to)
+        c = col:mix(color(0,0,0,col.a),1+l:dot(nml)-ll)
+        __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts)
-    local j,nml
+function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
+    local j,nml,c,ll
+    ll = l:len()
     for k=1,n-1 do
         j = k + 1
         nml = (v[k] - a):cross(v[j] - a)
@@ -316,40 +358,66 @@ function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts)
             nml = -nml
         end
         nml = nml:normalize()
-        __addTriangle(m,p,v[j],v[k],a,col,col,col,nml,nml,nml,to+t[j],to+t[k],to)
+        c = col:mix(color(0,0,0,col.a),1+l:dot(nml)-ll)
+        __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts)
-    local j,nmla,nmlb,nmlc
+function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
+    local j,nmla,nmlb,nmlc,cc,ca,ll,nb,cb
+    ll = l:len()
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,v[n],a,v[2])
+    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    nb = vec3(0,0,0)
+    for k=1,n do
+        j = k%n + 1
+        nb = nb + __discreteNormal(v[j],o,v[k],a,v[j%n+1])
+    end
+    nb = nb:normalize()
+    cb = col:mix(color(0,0,0,col.a),1+l:dot(nb)-ll)
     for k=1,n do
         j = k%n + 1
         nmla = nmlc
+        ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        __addTriangle(m,p,v[j],v[k],a,col,col,col,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
+        cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+        __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts)
-    local j,nmla,nmlb,nmlc
+function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
+    local j,nmla,nmlb,nmlc,cc,ca,ll,nb,cb
+    ll = l:len()
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,a,v[2])
+    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    nb = vec3(0,0,0)
+    for k=1,n-2 do
+        j = k + 1
+        nb = nb + __discreteNormal(v[j],o,v[k],a,v[j%n+1])
+    end
+    nb = nb + __discreteNormal(v[n],o,v[n-1],a)
+    nb = nb:normalize()
+    cb = col:mix(color(0,0,0,col.a),1+l:dot(nb)-ll)
     for k=1,n-2 do
         j = k + 1
         nmla = nmlc
+        ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        __addTriangle(m,p,v[j],v[k],a,col,col,col,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
+        cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+        __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     nmla = nmlc
+    ca = cc
     nmlc = __discreteNormal(v[n],o,v[n-1],a)
-    __addTriangle(m,p,v[n],v[n-1],a,col,col,col,nmlc,nmla,nmlb,to+t[n],to+t[n-1],to)
+    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    __addTriangle(m,p,v[n],v[n-1],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[n],to+t[n-1],to)
     return p + 3
 end
 
@@ -367,8 +435,9 @@ to texture offset
 ts not used
 f faceted or not
 cl closed curve or not
+l light vector
 --]]
-function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl)
+function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl,l)
     local a,b,r = vec3(0,0,0),vec2(0,0),0
     for k,u in ipairs(v) do
         a = a + u
@@ -382,7 +451,7 @@ function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl)
     for k=1,r do
         t[k] = t[k] - b
     end
-    return __doCone(m,p,n,o,a,v,t,col,to+b,ts,f,cl)
+    return __doCone(m,p,n,o,a,v,t,col,to+b,ts,f,cl,l)
 end
 
 --[[
@@ -393,7 +462,7 @@ end
 | `colour`/`color` | white | The colour of the shape. |
 | `faceted` | true | Whether to make it faceted or smooth. |
 | `ends` | `0` | Which ends to fill in (`0` for none, `1` for start, `2` for end, `3` for both) |
-| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this shape. |
+| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this shape. |
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this shape. |
 
 There are various ways to specify the dimensions of the cylinder.
@@ -412,7 +481,12 @@ Other directions (if needed) are found by taking orthogonal vectors to this axis
 										
 function addCylinder(t)
     t = t or {}
-    local m = t.mesh or mesh()
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local ip = p
@@ -428,14 +502,24 @@ function addCylinder(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
+    end
     local r = t.radius or 1
     local h = t.height or 1
     local to = t.texOrigin or vec2(0,0)
     local ts = t.texSize or vec2(1,1)
     local sc,si,sj,ec,ei,ej,a,o
     
-    if t.axis or t.axes then
-        a = t.axis or t.axes[1]
+    if t.axis or t.axes or t.origin then
+        if t.axis then
+            a = t.axis
+        elseif t.axes then
+            a = t.axes[1]
+        else
+            a = vec3(0,1,0)
+        end
         if t.height then
             a = h*a:normalize()
         end
@@ -539,25 +623,28 @@ function addCylinder(t)
         m:resize(p-1+size)
     end
     n = n + 1
-    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f,closed)
+    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f,closed,l)
     to = to + ts/2
     if solid and not closed then
         local tex = {-ts/2,vec2(ts.x/2,-ts.y/2),ts/2,vec2(-ts.x/2,ts.y/2)}
         for i=1,2 do
             to.x = to.x + ts.x
-            p = __doPoly(m,p,4,o,cnrs[i],tex,col,to,ts,f,true)
+            p = __doPoly(m,p,4,o,cnrs[i],tex,col,to,ts,f,true,l)
         end
     end
-
     if ends%2 == 1 then
         to.x = to.x + ts.x
-        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f,closed)
+        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f,closed,l)
     end
     if ends >= 2 then
         to.x = to.x + ts.x
-        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f,closed)
+        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f,closed,l)
     end
-    return m,ip, p
+    if ret then
+        return m,ip, p
+    else
+        return m
+    end
 end
 
 --[[
@@ -575,25 +662,27 @@ to offset of texture region (vec2)
 ts size of texture region (vec2)
 f faceted
 cl closed
+l light vector
 --]]
-function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl)
+function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl,l)
     if f then
         if cl then
-            return __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col)
+            return __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
         else
-            return __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col)
+            return __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
         end
     else
         if cl then
-            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col)
+            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
         else
-            return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col)
+            return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
         end
     end
 end
 
-function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col)
-    local i,j,nv,nu
+function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
+    local i,j,nv,nu,cu,cv,ll
+    ll = l:len()
     for k=1,n do
         j = k%n + 1
         nu = (u[j] - u[k]):cross(v[k] - u[k]):normalize()
@@ -604,16 +693,19 @@ function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv,nv,nv,vt[j],vt[k],ut[j])
+        cv = col:mix(color(0,0,0,col.a),1+l:dot(nv)-ll)
+        cu = col:mix(color(0,0,0,col.a),1+l:dot(nu)-ll)
+        __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
-        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nu,nu,nu,vt[k],ut[j],ut[k])
+        __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
         p = p + 3
     end
     return p
 end
 
-function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col)
-    local i,j,nv,nu
+function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
+    local i,j,nv,nu,cu,cv,ll
+    ll = l:len()
     for k=1,n-1 do
         j = k + 1
         nu = (u[j] - u[k]):cross(v[k] - u[k]):normalize()
@@ -624,52 +716,66 @@ function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv,nv,nv,vt[j],vt[k],ut[j])
+        cv = col:mix(color(0,0,0,col.a),1+l:dot(nv)-ll)
+        cu = col:mix(color(0,0,0,col.a),1+l:dot(nu)-ll)
+        __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
-        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nu,nu,nu,vt[k],ut[j],ut[k])
+        __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
         p = p + 3
     end
     return p
 end
 
-function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col)
-    local i,j,nv,nu
-    nv,nu = {},{}
+function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
+    local i,j,nv,nu,cu,cv,ll
+    ll = l:len()
+    nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,v[n],u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,u[n],v[1],u[2])
+    cv[1] = col:mix(color(0,0,0,col.a),1+l:dot(nv[1])-ll)
+    cu[1] = col:mix(color(0,0,0,col.a),1+l:dot(nu[1])-ll)
     for k=1,n do
         j = k%n + 1
         i = j%n + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
+        cv[j] = col:mix(color(0,0,0,col.a),1+l:dot(nv[j])-ll)
+        cu[j] = col:mix(color(0,0,0,col.a),1+l:dot(nu[j])-ll)
+        __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
-        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
+        __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
         p = p + 3
     end
     return p
 end
 
-function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col)
-    local i,j,nv,nu
-    nv,nu = {},{}
+function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
+    local i,j,nv,nu,cu,cv,ll
+    ll = l:len()
+    nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,v[1],u[2])
+    cv[1] = col:mix(color(0,0,0,col.a),1+l:dot(nv[1])-ll)
+    cu[1] = col:mix(color(0,0,0,col.a),1+l:dot(nu[1])-ll)
     for k=1,n-2 do
         j = k + 1
         i = j + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        __addTriangle(m,p,v[j],v[k],u[j],col,col,col,nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
+        cv[j] = col:mix(color(0,0,0,col.a),1+l:dot(nv[j])-ll)
+        cu[j] = col:mix(color(0,0,0,col.a),1+l:dot(nu[j])-ll)
+        __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
-        __addTriangle(m,p,v[k],u[j],u[k],col,col,col,nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
+        __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
         p = p + 3
     end
     nv[n] = __discreteNormal(v[n],o,v[n-1],u[n])
     nu[n] = __discreteNormal(u[n],o,u[n-1],v[n])
-    __addTriangle(m,p,v[n],v[n-1],u[n],col,col,col,nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
+    cv[n] = col:mix(color(0,0,0,col.a),1+l:dot(nv[n])-ll)
+    cu[n] = col:mix(color(0,0,0,col.a),1+l:dot(nu[n])-ll)
+    __addTriangle(m,p,v[n],v[n-1],u[n],cv[n],cv[n-1],cu[n],nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
     p = p + 3
-    __addTriangle(m,p,v[n-1],u[n],u[n-1],col,col,col,nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
+    __addTriangle(m,p,v[n-1],u[n],u[n-1],cv[n-1],cu[n],cu[n-1],nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
     return p+3
 end
 
@@ -713,7 +819,12 @@ Adds a pyramid to a mesh.
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
 --]]
 function addPyramid(t)
-    local m = t.mesh or mesh()
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or vec3(0,0,0)
@@ -721,6 +832,10 @@ function addPyramid(t)
     local f = true
     if t.faceted ~= nil then
         f = t.faceted
+    end
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
     end
     local as = t.aspect or 1
     local to = t.texOrigin or vec2(0,0)
@@ -749,7 +864,11 @@ function addPyramid(t)
     if p > m.size - 6*n then
         m:resize(p + 6*n-1)
     end
-    return m,p,__doPyramid(m,p,n,o,a,c,to,ts,f,true)
+    if ret then
+        return m,p,__doPyramid(m,p,n,o,a,c,to,ts,f,l)
+    else
+        return m
+    end
 end
 
 --[[
@@ -764,8 +883,9 @@ col colour
 to texture offset
 ts texture size
 f faceted
+l light vector
 --]]
-function __doPyramid(m,p,n,o,a,col,to,ts,f)
+function __doPyramid(m,p,n,o,a,col,to,ts,f,l)
     local th = 2*math.pi/n
     local cs = math.cos(th)
     local sn = math.sin(th)
@@ -781,11 +901,11 @@ function __doPyramid(m,p,n,o,a,col,to,ts,f)
         c,d = cs*c + sn*d, -sn*c + cs*d
         tc,td = cs*tc + sn*td, -sn*tc + cs*td
     end
-    return __doSuspension(m,p,n,o+a[1]/2,{o+a[1],o},pol,tex,col,to,ts,f,true)
+    return __doSuspension(m,p,n,o+a[1]/2,{o+a[1],o},pol,tex,col,to,ts,f,true,l)
 end
 
--- cube faces are in binary order: 000, 001, 010, 011 etc
-local CubeFaces = {
+-- block faces are in binary order: 000, 001, 010, 011 etc
+local BlockFaces = {
         {1,2,3,4},
         {5,7,6,8},
         {1,5,2,6},
@@ -793,39 +913,44 @@ local CubeFaces = {
         {2,6,4,8},
         {1,3,5,7}
     }
-local CubeTex = {
+local BlockTex = {
     vec2(0,0),vec2(1/6,0),vec2(0,1),vec2(1/6,1)
 }
 --[[
-Adds a cube to a mesh.
+Adds a block to a mesh.
 
 | Option | Default | Description |
 |:-------|:--------|:------------|
 | `mesh`                     | new mesh | Mesh to use to add shape to. |
 | `position`                 | end of mesh | Position in mesh to add shape at. |
-| `colour`/`color` | color(255, 255, 255, 255) | Colour or colours to use.  Can be a table of colours, one for each vertex of the cube. |
+| `colour`/`color` | color(255, 255, 255, 255) | Colour or colours to use.  Can be a table of colours, one for each vertex of the block. |
 | `faces`        | all         | Which faces to render |
 | `texOrigin`    | `vec2(0,0)` | Lower left corner of region on texture. |
 | `texSize`      | `vec2(1,1)` | Width and height of region on texture. |
 | `singleImage`  | `false`     | Uses the same image for all sides. |
 
-There are a few ways of specifying the dimensions of the "cube".
+There are a few ways of specifying the dimensions of the "block".
 
-`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "cube" by specifying a centre followed by the width, height, and depth of the cube (`size` sets all three).  These can be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "cube" in the `x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by adding them to the centre so that the edges of the "cube" end up parallel to the given vectors.
+`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "block" by specifying a centre followed by the width, height, and depth of the cube (`size` sets all three).  These can be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "block" in the `x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by adding them to the centre so that the edges of the "block" end up parallel to the given vectors.
 
-`startCentre`/`startCenter`, `startWidth`, `startHeight`, `endCentre`/`endCenter`, `endWidth`, `endHeight`.  This defined the "cube" by defining two opposite faces of the cube and then filling in the region in between.  The two faces are defined by their centres, widths, and heights.  The widths and heights can be numbers or `vec3`s exactly as above.
+`startCentre`/`startCenter`, `startWidth`, `startHeight`, `endCentre`/`endCenter`, `endWidth`, `endHeight`.  This defined the "block" by defining two opposite faces of the cube and then filling in the region in between.  The two faces are defined by their centres, widths, and heights.  The widths and heights can be numbers or `vec3`s exactly as above.
 
-`cube`.  This is a table of eight vertices defining the cube.  The vertices are listed in binary order, in that if you picture the vertices of the standard cube of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
+`block`.  This is a table of eight vertices defining the block.  The vertices are listed in binary order, in that if you picture the vertices of the standard cube of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
 --]]
-function addCube(t)
-    local m = t.mesh or mesh()
+function addBlock(t)
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local c = t.colour or t.color or color(255, 255, 255, 255)
     if type(c) == "userdata" then
         c = {c,c,c,c,c,c,c,c}
     end
-    local f = t.faces or CubeFaces
+    local f = t.faces or BlockFaces
     local to = t.texOrigin or vec2(0,0)
     local ts = t.texSize or vec2(1,1)
     local dt = 1
@@ -833,9 +958,13 @@ function addCube(t)
         dt = 0
         ts.x = ts.x * 6
     end
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
+    end
     local v
-    if t.cube then
-        v = t.cube
+    if t.block then
+        v = t.block
     elseif t.center or t.centre then
         local o = t.center or t.centre
         local w,h,d = t.width or t.size or 1, t.height or t.size or 1, t.depth or t.size or 1
@@ -896,42 +1025,49 @@ function addCube(t)
         }
     else
         v = {
-            vec3(0,0,0),
-            vec3(1,0,0),
-            vec3(0,1,0),
-            vec3(1,1,0),
-            vec3(0,0,1),
-            vec3(1,0,1),
-            vec3(0,1,1),
-            vec3(1,1,1),
+            vec3(-1,-1,-1)/2,
+            vec3(1,-1,-1)/2,
+            vec3(-1,1,-1)/2,
+            vec3(1,1,-1)/2,
+            vec3(-1,-1,1)/2,
+            vec3(1,-1,1)/2,
+            vec3(-1,1,1)/2,
+            vec3(1,1,1)/2
         }
     end
     if p > m.size - 36 then
         m:resize(p + 35)
     end
-    return m,p,__doCube(m,p,f,v,c,to,ts,dt)
+    if ret then
+        return m,p,__doBlock(m,p,f,v,c,to,ts,dt,l)
+    else
+        return m
+    end
 end
 
 --[[
 m mesh
 p index of first vertex to be used
-f table of faces of cube
-v table of vertices of cube
-c table of colours of cube (per vertex of cube)
+f table of faces of block
+v table of vertices of block
+c table of colours of block (per vertex of block)
 to offset for this shape's segment of the texture
 ts size of this shape's segment of the texture
 dt step size for the texture tiling
+l light vector
 --]]
-function __doCube(m,p,f,v,c,to,ts,dt)
-    local n,t,tv
+function __doBlock(m,p,f,v,c,to,ts,dt,l)
+    local n,t,tv,ll
     t = 0
+    l = l / 2
+    ll = l:len()
     for k,w in ipairs(f) do
         n = (v[w[3]] - v[w[1]]):cross(v[w[2]] - v[w[1]]):normalize()
         for i,u in ipairs({1,2,3,2,3,4}) do
             m:vertex(p,v[w[u]])
-            m:color(p,c[w[u]])
+            m:color(p,c[w[u]]:mix(color(0,0,0,c[w[u]].a),1+l:dot(n)-ll))
             m:normal(p,n)
-            tv = CubeTex[u] + t*vec2(1/6,0)
+            tv = BlockTex[u] + t*vec2(1/6,0)
             tv.x = tv.x * ts.x
             tv.y = tv.y * ts.y
             m:texCoord(p, to + tv)
@@ -959,7 +1095,12 @@ Adds a sphere to a mesh.
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
 --]]
 function addSphere(t)
-    local m = t.mesh or mesh()
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or t.centre or t.center or vec3(0,0,0)
@@ -974,11 +1115,19 @@ function addSphere(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
+    end
     if p > m.size - 12*n*(n-1) then
         m:resize(p+12*n*(n-1)-1)
     end
     local step = math.pi/n
-    return m,p,__doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts)
+    if ret then
+        return m,p,__doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts,l)
+    else
+        return m
+    end
 end
 
 --[[
@@ -1006,7 +1155,12 @@ Specifying the segment can be done in a variety of ways.
 
 --]]
 function addSphereSegment(t)
-    local m = t.mesh or mesh()
+    local ret,m
+    if t.mesh then
+        ret,m = true,t.mesh
+    else
+        ret,m = false,mesh()
+    end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local ip = p
@@ -1043,8 +1197,8 @@ function addSphereSegment(t)
     else
         a = t.axes or {vec3(1,0,0),vec3(0,1,0),vec3(0,0,1)}
         a[1],a[2],a[3] = s*a[1],s*a[2],s*a[3]
-        sp,ep,dp = __threeFromTwo(t.startLongitude,t.endLongitude,t.deltaLongitude,0,180,180)
-        st,et,dt = __threeFromTwo(t.startLatitude,t.endLatitude,t.deltaLatitude,0,360,360)
+        sp,ep,dp = __threeFromTwo(t.startLongitude,t.endLongitude,t.deltaLongitude,0,360,360)
+        st,et,dt = __threeFromTwo(t.startLatitude,t.endLatitude,t.deltaLatitude,0,180,180)
         sp = sp/180*math.pi
         dp = dp/180*math.pi
         ep = ep/180*math.pi
@@ -1062,6 +1216,10 @@ function addSphereSegment(t)
     local f = false
     if t.faceted ~= nil then
         f = t.faceted
+    end
+    local l = t.light or vec3(0,0,0)
+    if l:lenSqr() > 1 then
+        l = l:normalize()
     end
     local size = 6*nt*np
     if st == 0 then
@@ -1086,7 +1244,7 @@ function addSphereSegment(t)
     if p > m.size - size then
         m:resize(p-1+size)
     end
-    p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts)
+    p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,l)
     if solid then
         to.x = to.x + ts.x
         local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
@@ -1100,7 +1258,7 @@ function addSphereSegment(t)
         end
         table.insert(v,o + math.cos(et)*a[3])
         table.insert(tex,ts)
-        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true)
+        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true,l)
         to.x = to.x + ts.x
         v,tex = {},{}
         table.insert(v,o + math.cos(st)*a[3])
@@ -1111,7 +1269,7 @@ function addSphereSegment(t)
         end
         table.insert(v,o + math.cos(et)*a[3])
         table.insert(tex,vec2(0,ts.y))
-        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true)
+        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true,l)
         to = to + ts/2
         if st ~= 0 then
             to.x = to.x + ts.x
@@ -1120,7 +1278,7 @@ function addSphereSegment(t)
                 table.insert(v,o+math.sin(st)*math.cos(sp+k*dp)*a[1] + math.sin(st)*math.sin(sp+k*dp)*a[2] + math.cos(st)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
-            p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false)
+            p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false,l)
         end
         if et < math.pi then
             to.x = to.x + ts.x
@@ -1129,10 +1287,14 @@ function addSphereSegment(t)
                 table.insert(v,o+math.sin(et)*math.cos(sp+k*dp)*a[1] + math.sin(et)*math.sin(sp+k*dp)*a[2] + math.cos(et)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
-            p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false)
+            p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false,l)
         end
     end
-    return m,ip,p
+    if ret then
+        return m,ip,p
+    else
+        return m
+    end
 end
 
 --[[
@@ -1152,9 +1314,11 @@ c colour
 f faceted or smooth
 to offset for this shape's segment of the texture
 ts size of this shape's segment of the texture
+l light vector
 --]]
-function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts)
-    local theta,ptheta,phi,pphi,ver,et,ep,tx,l,tex,stt,ett
+function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
+    local theta,ptheta,phi,pphi,ver,et,ep,tx,l,tex,stt,ett,ln,nml
+    ln = ll:len()
     et = nt*dt/ts.y
     ep = np*dp/ts.x
     if st == 0 then
@@ -1188,13 +1352,14 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts)
             end
             for k = 1,6 do
                 m:vertex(p,o + ver[k])
-                m:color(p,c)
                 if f then
                     l = math.floor((k-1)/3)
-                    m:normal(p,(-1)^l*(ver[3*l+3] - ver[3*l+1]):cross(ver[3*l+2] - ver[3*l+1]):normalize())
+                    nml = (-1)^l*(ver[3*l+3] - ver[3*l+1]):cross(ver[3*l+2] - ver[3*l+1]):normalize()
                 else
-                    m:normal(p,ver[k]:normalize())
+                    nml = ver[k]:normalize()
                 end
+                m:color(p,c:mix(color(0,0,0,255),1+ll:dot(nml)-ln))
+                m:normal(p,nml)
                 m:texCoord(p,tex[k])
                 p = p + 1
             end
@@ -1228,12 +1393,13 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts)
             end
             for k=1,3 do
                 m:vertex(p,o + ver[k])
-                m:color(p,c)
                 if f then
-                    m:normal(p,(-1)^i*(ver[2]-ver[1]):cross(ver[3]-ver[1]):normalize())
+                    nml = (-1)^i*(ver[2]-ver[1]):cross(ver[3]-ver[1]):normalize()
                 else
-                    m:normal(p,ver[k]:normalize())
+                    nml = ver[k]:normalize()
                 end
+                m:normal(p,nml)
+                m:color(p,c:mix(color(0,0,0,255),1+ll:dot(nml)-ln))
                 m:texCoord(p,tex[k])
                 p = p + 1
             end
@@ -1265,8 +1431,8 @@ mt.addPyramid = function(m,t)
     return __addShape(m,addPyramid,t)
 end
 
-mt.addCube = function(m,t)
-    return __addShape(m,addCube,t)
+mt.addBlock = function(m,t)
+    return __addShape(m,addBlock,t)
 end
 
 mt.addCylinder = function(m,t)
