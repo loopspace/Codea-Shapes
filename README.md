@@ -8,35 +8,37 @@ addJewel
 
 | option       | default                  | description |
 |:-------------|:-------------------------|:------------|
-| mesh         | new mesh                 | The mesh to add the shape to. |
-| position     | end of mesh              | The position in the mesh at which to start the shape. |
-| origin       | `vec3(0,0,0)`            | The origin (or centre) of the shape. |
-| axis         | `vec3(0,1,0)`            | The axis specifies the direction of the jewel. |
-| aspect       | 1                        | The ratio of the height to the diameter of the gem. |
-| size         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
-| colour/color | `color(223,225,124,255)` | The colour of the jewel. |
-| texOrigin    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
-| texSize      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+| `mesh`         | new mesh                 | The mesh to add the shape to. |
+| `position`     | end of mesh              | The position in the mesh at which to start the shape. |
+| `origin`       | `vec3(0,0,0)`            | The origin (or centre) of the shape. |
+| `axis`         | `vec3(0,1,0)`            | The axis specifies the direction of the jewel. |
+| `aspect`       | 1                        | The ratio of the height to the diameter of the gem. |
+| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
+| `colour`/`color` | `color(223,225,124,255)` | The colour of the jewel. |
+| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
-addCube
-=======
+addBlock
+========
 
 | Option | Default | Description |
 |:-------|:--------|:------------|
 | `mesh`                     | new mesh | Mesh to use to add shape to. |
 | `position`                 | end of mesh | Position in mesh to add shape at. |
-| `colour`/`color` | color(148,105,50,255) | Colour or colours to use.  Can be a table of colours, one for each vertex of the cube. |
+| `colour`/`color` | color(148,105,50,255) | Colour or colours to use.  Can be a table of colours, one for each vertex of the block. |
 | `faces`        | all         | Which faces to render |
 | `texOrigin`    | `vec2(0,0)` | Lower left corner of region on texture. |
 | `texSize`      | `vec2(1,1)` | Width and height of region on texture. |
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
-There are a few ways of specifying the dimensions of the "cube".
+There are a few ways of specifying the dimensions of the "block".
 
-`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "cube" by specifying a centre followed by the width, height, and depth of the cube (`size` sets all three).  These can be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "cube" in the `x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by adding them to the centre so that the edges of the "cube" end up parallel to the given vectors.
+`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "block" by specifying a centre followed by the width, height, and depth of the block (`size` sets all three).  These can be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "block" in the `x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by adding them to the centre so that the edges of the "block" end up parallel to the given vectors.
 
-`startCentre`/startCenter`, `startWidth`, `startHeight`, `endCentre`/endCenter`, `endWidth`, `endHeight`.  This defined the "cube" by defining two opposite faces of the cube and then filling in the region in between.  The two faces are defined by their centres, widths, and heights.  The widths and heights can be numbers or `vec3`s exactly as above.
+`startCentre`/startCenter`, `startWidth`, `startHeight`, `endCentre`/endCenter`, `endWidth`, `endHeight`.  This defined the "block" by defining two opposite faces of the block and then filling in the region in between.  The two faces are defined by their centres, widths, and heights.  The widths and heights can be numbers or `vec3`s exactly as above.
 
-`cube`.  This is a table of eight vertices defining the cube.  The vertices are listed in binary order, in that if you picture the vertices of the standard cube of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
+`block`.  This is a table of eight vertices defining the block.  The vertices are listed in binary order, in that if you picture the vertices of the standard block of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
 
 addSphere
 =========
@@ -53,6 +55,7 @@ addSphere
 | `number` | `36` | Number of steps to use to render sphere (twice this for longitude. |
 | `texOrigin` | `vec2(0,0)` | Origin of region in texture to use. |
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
 addSphereSegment
 ================
@@ -70,6 +73,7 @@ addSphereSegment
 | `solid` | `true` | Whether to make the sphere solid by filling in the internal sides. |
 | `texOrigin` | `vec2(0,0)` | Origin of region in texture to use. |
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
 Specifying the segment can be done in a variety of ways.
 
@@ -87,6 +91,7 @@ addCylinder
 | `ends` | `0` | Which ends to fill in (`0` for none, `1` for start, `2` for end, `3` for both) |
 | `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this shape. |
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this shape. |
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
 There are various ways to specify the dimensions of the cylinder.
 If given together, the more specific overrides the more general.
@@ -115,4 +120,5 @@ addPyramid
 | `colour`/`color` | `color(255, 255, 255, 255)` | The colour of the jewel. |
 | `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+| `light`        | `vec3(0,0,0)`            | This provides a light direction which shades the colours accordingly (a zero vector effectively turns this off) |
 
