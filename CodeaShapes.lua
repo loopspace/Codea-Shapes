@@ -1,6 +1,7 @@
 -- MeshShapes
 
 -- Use this function to perform your initial setup
+--[==[
 function setup()
     -- extendMesh()
     parameter.number("rot_x",0,360,0)
@@ -8,10 +9,12 @@ function setup()
     parameter.number("rot_z",0,360,0)
     parameter.number("size",-1,2,0)
     m = mesh()
+    -- [[
     m.shader = lighting()
     m.shader.ambient = .5
     m.shader.light = vec3(0,5,-1):normalize()
     m.shader.useTexture = 0
+    --]]
     local w,h = spriteSize("Cargo Bot:Crate Blue 1")
     img = image(10*w,h)
     setContext(img)
@@ -29,6 +32,7 @@ function setup()
     setContext()
     -- m.texture = img
     local light = vec3(1,1,0)/3
+    --[[
     print("Initial mesh size:", m.size)
     print("Returned values of addJewel:", m:addJewel({
         texOrigin = vec2(0,0),
@@ -103,20 +107,22 @@ function setup()
         number = 6,
         light = light
     }))
+    --]]
     print("Returned values of addCylinder:", m:addCylinder({
-        origin = vec3(4,2,0),
+    -- origin = vec3(4,2,0),
         texOrigin = vec2(0,0),
         texSize = vec2(.3,1),
         colour = color(255, 255, 255, 255),
     -- startRadius = .5,
     -- endRadius = 1,
     -- axis = vec3(0,1,0),
-        faceted = false,
+    -- faceted = false,
         number = 15,
         height = 2,
-        ends = 3,
+    -- ends = 3,
         light = light
     }))
+    --[[
     print("Returned values of addCylinder:", m:addCylinder({
         startCentre = vec3(6,2,0),
         endCentre = vec3(4,4,0),
@@ -151,16 +157,19 @@ function setup()
         light = light
     }))
     print("Returned values of addSphereSegment:", m:addSphereSegment({
-        origin = vec3(-2,2,0),
+    -- origin = vec3(-2,2,0),
+    centre = vec3(0,0,0),
         texOrigin = vec2(0.7,0),
         texSize = vec2(.3,1),
-        colour = color(255, 255, 255, 255),
-        faceted = true,
+        colour = color(255, 251, 0, 255),
+    -- faceted = true,
         number = 6,
+    size = 15,
     -- startLatitude=0,deltaLatitude=180,
         startLongitude=30,deltaLongitude=100,
-        light = light
+    -- light = light
     }))
+    --]]
     print("Final mesh size:",m.size)
 end
 
@@ -178,9 +187,110 @@ function draw()
     rotate(rot_x,1,0,0)
     scale(10^size)
     -- Do your drawing here
-    m.shader.invModel = modelMatrix():inverse():transpose()
+    if m.shader then
+        m.shader.invModel = modelMatrix():inverse():transpose()
+    end
     m:draw()
 end
+--]==]
+-- [==[
+function setup()
+    --define light source
+    light=vec3(1,.5,0)/3
+    --create shapes using colours and images
+    --we'll store them in separate meshes, because these shapes will usually be moved/rotated individually
+    shapes={}
+    
+    --[1] plain coloured cube, no lighting, centred on 0 so we can rotate it
+    --it looks pretty terrible, as you will see. You really need lighting or a texture image
+    --NOTE - centre will usually be 0 if shapes are rotated, can we set this as default so it can be omitted?
+    shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light} --returns mesh
+    light = nil
+    --NOTE - because the functions which add shapes, return multiple items, it isn't possible to use table.insert,
+    --nor to define a table all in one go as a set of added shapes, eg
+    --shapes={addCube{...},addPyramid{...}...}
+    --this is going to cause confusion. Are the extra items necessary? If so, why not attach them to the
+    --mesh as properties so we only have to return one item, the mesh
+    
+    --[2] same cube again, with lighting (which we'll add after we've created all the objects)
+    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light} --no change so far
+    
+    --[3] a block with different shaped sides, with a texture image
+    local brick=readImage("Platformer Art:Block Brick"):copy(5,5,60,60) --crop brick picture to remove edges
+    shapes[3]=addBlock{center=vec3(0,0,0),width=20,depth=40,height=10,texture=brick,light=light}
+    
+    --NOTE --the library class breaks if you pass through an image name
+    --it should load the image itself if it needs to, and set the mesh texture as well
+    --it should also figure out whether the image is 1x1 or 6x1
+    --this is the code I added to do this, for cubes
+    --for other shapes, I added the same code without the line that checks texture width
+    --[[
+    if t.texture then
+        if type(t.texture)=="string" then t.texture=readImage(t.texture) end
+        if t.texture.width<6*t.texture.height then t.singleImage=true end
+        m.texture=t.texture
+    end
+    --]]
+    
+    --[4] a sphere
+    --NOTE - I altered the library code to read the image, as per note above)
+    shapes[4]=addSphere{centre=vec3(0,0,0),size=15,texture="Cargo Bot:Starry Background",light=light} 
+    
+    --[5] a segment of a sphere
+    shapes[5]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(222, 191, 43, 255),
+        startLongitude=30,deltaLongitude=100,light=light} 
+    
+    --[6] a jewel
+    shapes[6]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light}
+    
+    --[7] a pyramid
+    shapes[7]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light}
+    
+    --[8] a cylinder, both ends open
+    shapes[8]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light}
+    
+    --[9] a tapering cylinder, one end open, smooth surface
+    shapes[9]=addCylinder{centre=vec3(0,0,0),height=20,startRadius=15,endRadius=5,
+        faceted=false,ends=1,color=color(114, 95, 183, 255),light=light}    
+    
+    --set positions of shapes on screen
+    local gap=50 --spacing between shapes  on screen
+    for i=1,9 do
+        local a,b=math.modf((i-1)/3)
+        shapes[i].pos=vec3(a-1,b*3-1,0)*gap
+    end
+    
+    --now add lighting  
+    light=vec3(1,1,0)/5
+
+    for i=2,#shapes do  --leave the first shape without lights, as a comparison
+        local s=shapes[i]
+        s.shader = lighting()
+        s.shader.ambient = .5 --minimum light level on dark side
+        s.shader.light = light:normalize() --set lighting direction
+        if s.texture then s.shader.useTexture = 1 end
+    end
+
+    --set up some simple rotation to show the result
+    rot=vec3(0,0,0)  deltaRot=vec3(1,-1.2,1.7)*.2
+    
+end
+
+function draw()
+    background(50)
+    perspective()
+    camera(0,0,250,0,0,0)
+    for _,s in pairs(shapes) do
+        pushMatrix()
+        translate(s.pos.x,s.pos.y,s.pos.z)
+        rotate(rot.x,1,0,0) rotate(rot.y,0,1,0) rotate(rot.z,0,0,1)
+        if s.shader then s.shader.invModel = modelMatrix():inverse():transpose() end
+        s:draw()
+        popMatrix()  
+    end
+    rot=rot+deltaRot
+end
+--]==]
 
 local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder
 
@@ -203,6 +313,13 @@ function addJewel(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
@@ -230,8 +347,9 @@ function addJewel(t)
     if l:lenSqr() > 1 then
         l = l:normalize()
     end
+    local np = __doJewel(m,p,n,o,a,c,to,ts,l)
     if ret then
-        return m,p,__doJewel(m,p,n,o,a,c,to,ts,l)
+        return m,p,np
     else
         return m
     end
@@ -341,7 +459,7 @@ function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
             nml = -nml
         end
         nml = nml:normalize()
-        c = col:mix(color(0,0,0,col.a),1+l:dot(nml)-ll)
+        c = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nml))-ll)
         __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
@@ -358,7 +476,7 @@ function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
             nml = -nml
         end
         nml = nml:normalize()
-        c = col:mix(color(0,0,0,col.a),1+l:dot(nml)-ll)
+        c = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nml))-ll)
         __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
@@ -370,20 +488,20 @@ function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
     ll = l:len()
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,v[n],a,v[2])
-    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
     nb = vec3(0,0,0)
     for k=1,n do
         j = k%n + 1
         nb = nb + __discreteNormal(v[j],o,v[k],a,v[j%n+1])
     end
     nb = nb:normalize()
-    cb = col:mix(color(0,0,0,col.a),1+l:dot(nb)-ll)
+    cb = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nb))-ll)
     for k=1,n do
         j = k%n + 1
         nmla = nmlc
         ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+        cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
         __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
@@ -395,7 +513,7 @@ function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
     ll = l:len()
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,a,v[2])
-    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
     nb = vec3(0,0,0)
     for k=1,n-2 do
         j = k + 1
@@ -403,20 +521,20 @@ function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
     end
     nb = nb + __discreteNormal(v[n],o,v[n-1],a)
     nb = nb:normalize()
-    cb = col:mix(color(0,0,0,col.a),1+l:dot(nb)-ll)
+    cb = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nb))-ll)
     for k=1,n-2 do
         j = k + 1
         nmla = nmlc
         ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+        cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
         __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     nmla = nmlc
     ca = cc
     nmlc = __discreteNormal(v[n],o,v[n-1],a)
-    cc = col:mix(color(0,0,0,col.a),1+l:dot(nmlc)-ll)
+    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
     __addTriangle(m,p,v[n],v[n-1],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[n],to+t[n-1],to)
     return p + 3
 end
@@ -486,6 +604,13 @@ function addCylinder(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
@@ -585,7 +710,7 @@ function addCylinder(t)
     sa = math.rad(sa)
     ea = math.rad(ea)
     da = math.rad(da)/n
-    o = t.origin or (sc + math.cos((sa+ea)/2)*si + math.sin((sa+ea)/2)*sj + ec + math.cos((sa+ea)/2)*ei + math.sin((sa+ea)/2)*ej)/2
+    o = t.origin or (sc + math.cos((sa+ea)/2)*si/2 + math.sin((sa+ea)/2)*sj/2 + ec + math.cos((sa+ea)/2)*ei/2 + math.sin((sa+ea)/2)*ej/2)/2
     local ss = 1 + math.floor((ends+1)/2)
     if solid then
         ss = ss + 2 
@@ -693,8 +818,8 @@ function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        cv = col:mix(color(0,0,0,col.a),1+l:dot(nv)-ll)
-        cu = col:mix(color(0,0,0,col.a),1+l:dot(nu)-ll)
+        cv = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv))-ll)
+        cu = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu))-ll)
         __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
@@ -716,8 +841,8 @@ function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        cv = col:mix(color(0,0,0,col.a),1+l:dot(nv)-ll)
-        cu = col:mix(color(0,0,0,col.a),1+l:dot(nu)-ll)
+        cv = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv))-ll)
+        cu = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu))-ll)
         __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
@@ -732,15 +857,15 @@ function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
     nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,v[n],u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,u[n],v[1],u[2])
-    cv[1] = col:mix(color(0,0,0,col.a),1+l:dot(nv[1])-ll)
-    cu[1] = col:mix(color(0,0,0,col.a),1+l:dot(nu[1])-ll)
+    cv[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[1]))-ll)
+    cu[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[1]))-ll)
     for k=1,n do
         j = k%n + 1
         i = j%n + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        cv[j] = col:mix(color(0,0,0,col.a),1+l:dot(nv[j])-ll)
-        cu[j] = col:mix(color(0,0,0,col.a),1+l:dot(nu[j])-ll)
+        cv[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[j]))-ll)
+        cu[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[j]))-ll)
         __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
@@ -755,15 +880,15 @@ function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
     nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,v[1],u[2])
-    cv[1] = col:mix(color(0,0,0,col.a),1+l:dot(nv[1])-ll)
-    cu[1] = col:mix(color(0,0,0,col.a),1+l:dot(nu[1])-ll)
+    cv[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[1]))-ll)
+    cu[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[1]))-ll)
     for k=1,n-2 do
         j = k + 1
         i = j + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        cv[j] = col:mix(color(0,0,0,col.a),1+l:dot(nv[j])-ll)
-        cu[j] = col:mix(color(0,0,0,col.a),1+l:dot(nu[j])-ll)
+        cv[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[j]))-ll)
+        cu[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[j]))-ll)
         __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
@@ -771,8 +896,8 @@ function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
     end
     nv[n] = __discreteNormal(v[n],o,v[n-1],u[n])
     nu[n] = __discreteNormal(u[n],o,u[n-1],v[n])
-    cv[n] = col:mix(color(0,0,0,col.a),1+l:dot(nv[n])-ll)
-    cu[n] = col:mix(color(0,0,0,col.a),1+l:dot(nu[n])-ll)
+    cv[n] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[n]))-ll)
+    cu[n] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[n]))-ll)
     __addTriangle(m,p,v[n],v[n-1],u[n],cv[n],cv[n-1],cu[n],nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
     p = p + 3
     __addTriangle(m,p,v[n-1],u[n],u[n-1],cv[n-1],cu[n],cu[n-1],nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
@@ -824,6 +949,13 @@ function addPyramid(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
@@ -864,8 +996,9 @@ function addPyramid(t)
     if p > m.size - 6*n then
         m:resize(p + 6*n-1)
     end
+    local np = __doPyramid(m,p,n,o,a,c,to,ts,f,l)
     if ret then
-        return m,p,__doPyramid(m,p,n,o,a,c,to,ts,f,l)
+        return m,p,np
     else
         return m
     end
@@ -943,6 +1076,13 @@ function addBlock(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
@@ -1038,8 +1178,9 @@ function addBlock(t)
     if p > m.size - 36 then
         m:resize(p + 35)
     end
+    local np = __doBlock(m,p,f,v,c,to,ts,dt,l)
     if ret then
-        return m,p,__doBlock(m,p,f,v,c,to,ts,dt,l)
+        return m,p,np
     else
         return m
     end
@@ -1065,7 +1206,7 @@ function __doBlock(m,p,f,v,c,to,ts,dt,l)
         n = (v[w[3]] - v[w[1]]):cross(v[w[2]] - v[w[1]]):normalize()
         for i,u in ipairs({1,2,3,2,3,4}) do
             m:vertex(p,v[w[u]])
-            m:color(p,c[w[u]]:mix(color(0,0,0,c[w[u]].a),1+l:dot(n)-ll))
+            m:color(p,c[w[u]]:mix(color(0,0,0,c[w[u]].a),1+math.max(0,l:dot(n))-ll))
             m:normal(p,n)
             tv = BlockTex[u] + t*vec2(1/6,0)
             tv.x = tv.x * ts.x
@@ -1100,11 +1241,18 @@ function addSphere(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or t.centre or t.center or vec3(0,0,0)
-    local s = t.size or 1
+    local s = t.radius or t.size or 1
     local c = t.colour or t.color or color(255, 255, 255, 255)
     local n = t.number or 36
     local a = t.axes or {vec3(1,0,0),vec3(0,1,0),vec3(0,0,1)}
@@ -1123,8 +1271,9 @@ function addSphere(t)
         m:resize(p+12*n*(n-1)-1)
     end
     local step = math.pi/n
+    local np = __doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts,l)
     if ret then
-        return m,p,__doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts,l)
+        return m,p,np
     else
         return m
     end
@@ -1160,12 +1309,19 @@ function addSphereSegment(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.texture then
+            if type(t.texture) == "string" then
+                m.texture = readImage(t.texture)
+            else
+                m.texture = t.texture
+            end
+        end
     end
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local ip = p
     local o = t.origin or t.centre or t.center or vec3(0,0,0)
-    local s = t.size or 1
+    local s = t.radius or t.size or 1
     local c = t.colour or t.color or color(255, 255, 255, 255)
     local n = t.number or 36
     local solid = true
@@ -1248,28 +1404,40 @@ function addSphereSegment(t)
     if solid then
         to.x = to.x + ts.x
         local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
-        local v,tex = {},{}
+        local v,tex,at = {},{},1
         local tl,tu = math.cos(st), math.cos(et) - math.cos(st)
-        table.insert(v,o + math.cos(st)*a[3])
-        table.insert(tex,vec2(ts.x,0))
+        if st ~= 0 then
+            table.insert(v,o + math.cos(st)*a[3])
+            table.insert(tex,vec2(ts.x,0))
+            at = at + 1
+        end
         for k=0,nt do
             table.insert(v,o+math.sin(st+k*dt)*math.cos(sp)*a[1] + math.sin(st+k*dt)*math.sin(sp)*a[2] + math.cos(st+k*dt)*a[3])
             table.insert(tex,vec2(ts.x*(1-math.sin(st+k*dt)),ts.y*(math.cos(st+k*dt) - tl)/tu))
         end
-        table.insert(v,o + math.cos(et)*a[3])
-        table.insert(tex,ts)
-        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true,l)
+        if et < math.pi then
+            table.insert(v,o + math.cos(et)*a[3])
+            table.insert(tex,ts)
+            at = at + 1
+        end
+        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l)
         to.x = to.x + ts.x
-        v,tex = {},{}
-        table.insert(v,o + math.cos(st)*a[3])
-        table.insert(tex,vec2(0,0))
+        v,tex,at = {},{},1
+        if st ~= 0 then
+            table.insert(v,o + math.cos(st)*a[3])
+            table.insert(tex,vec2(0,0))
+            at = at + 1
+        end
         for k=0,nt do
             table.insert(v,o+math.sin(st+k*dt)*math.cos(ep)*a[1] + math.sin(st+k*dt)*math.sin(ep)*a[2] + math.cos(st+k*dt)*a[3])
             table.insert(tex,vec2(ts.x*math.sin(st+k*dt),ts.y*(math.cos(st+k*dt) - tl)/tu))
         end
-        table.insert(v,o + math.cos(et)*a[3])
-        table.insert(tex,vec2(0,ts.y))
-        p = __doPoly(m,p,nt+3,intl,v,tex,c,to,ts,f,true,l)
+        if et < math.pi then
+            table.insert(v,o + math.cos(et)*a[3])
+            table.insert(tex,vec2(0,ts.y))
+            at = at + 1
+        end
+        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l)
         to = to + ts/2
         if st ~= 0 then
             to.x = to.x + ts.x
@@ -1358,7 +1526,7 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
                 else
                     nml = ver[k]:normalize()
                 end
-                m:color(p,c:mix(color(0,0,0,255),1+ll:dot(nml)-ln))
+                m:color(p,c:mix(color(0,0,0,255),1+math.max(0,ll:dot(nml))-ln))
                 m:normal(p,nml)
                 m:texCoord(p,tex[k])
                 p = p + 1
@@ -1399,7 +1567,7 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
                     nml = ver[k]:normalize()
                 end
                 m:normal(p,nml)
-                m:color(p,c:mix(color(0,0,0,255),1+ll:dot(nml)-ln))
+                m:color(p,c:mix(color(0,0,0,255),1+math.max(0,ll:dot(nml))-ln))
                 m:texCoord(p,tex[k])
                 p = p + 1
             end
