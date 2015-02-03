@@ -196,7 +196,7 @@ end
 -- [==[
 function setup()
     --define light source
-    light=vec3(1,.5,0)/3
+    light=vec3(1,.5,0)
     --create shapes using colours and images
     --we'll store them in separate meshes, because these shapes will usually be moved/rotated individually
     shapes={}
@@ -205,7 +205,7 @@ function setup()
     --it looks pretty terrible, as you will see. You really need lighting or a texture image
     --NOTE - centre will usually be 0 if shapes are rotated, can we set this as default so it can be omitted?
     shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light} --returns mesh
-    light = nil
+
     --NOTE - because the functions which add shapes, return multiple items, it isn't possible to use table.insert,
     --nor to define a table all in one go as a set of added shapes, eg
     --shapes={addCube{...},addPyramid{...}...}
@@ -213,11 +213,11 @@ function setup()
     --mesh as properties so we only have to return one item, the mesh
     
     --[2] same cube again, with lighting (which we'll add after we've created all the objects)
-    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light} --no change so far
+    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5} --no change so far
     
     --[3] a block with different shaped sides, with a texture image
     local brick=readImage("Platformer Art:Block Brick"):copy(5,5,60,60) --crop brick picture to remove edges
-    shapes[3]=addBlock{center=vec3(0,0,0),width=20,depth=40,height=10,texture=brick,light=light}
+    shapes[3]=addBlock{center=vec3(0,0,0),width=20,depth=40,height=10,texture=brick,light=light,ambience=.5}
     
     --NOTE --the library class breaks if you pass through an image name
     --it should load the image itself if it needs to, and set the mesh texture as well
@@ -234,41 +234,30 @@ function setup()
     
     --[4] a sphere
     --NOTE - I altered the library code to read the image, as per note above)
-    shapes[4]=addSphere{centre=vec3(0,0,0),size=15,texture="Cargo Bot:Starry Background",light=light} 
+    shapes[4]=addSphere{centre=vec3(0,0,0),size=15,texture="Cargo Bot:Starry Background",light=light,ambience=.5} 
     
     --[5] a segment of a sphere
     shapes[5]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(222, 191, 43, 255),
-        startLongitude=30,deltaLongitude=100,light=light} 
+        startLongitude=30,deltaLongitude=100,light=light,ambience=.5} 
     
     --[6] a jewel
-    shapes[6]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light}
+    shapes[6]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
     
     --[7] a pyramid
-    shapes[7]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light}
+    shapes[7]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
     
     --[8] a cylinder, both ends open
-    shapes[8]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light}
+    shapes[8]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light,ambience=.5}
     
     --[9] a tapering cylinder, one end open, smooth surface
     shapes[9]=addCylinder{centre=vec3(0,0,0),height=20,startRadius=15,endRadius=5,
-        faceted=false,ends=1,color=color(114, 95, 183, 255),light=light}    
+        faceted=false,ends=1,color=color(114, 95, 183, 255),light=light,ambience=.5}    
     
     --set positions of shapes on screen
     local gap=50 --spacing between shapes  on screen
     for i=1,9 do
         local a,b=math.modf((i-1)/3)
         shapes[i].pos=vec3(a-1,b*3-1,0)*gap
-    end
-    
-    --now add lighting  
-    light=vec3(1,1,0)/5
-
-    for i=2,#shapes do  --leave the first shape without lights, as a comparison
-        local s=shapes[i]
-        s.shader = lighting()
-        s.shader.ambient = .5 --minimum light level on dark side
-        s.shader.light = light:normalize() --set lighting direction
-        if s.texture then s.shader.useTexture = 1 end
     end
 
     --set up some simple rotation to show the result
@@ -313,6 +302,21 @@ function addJewel(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
@@ -604,6 +608,21 @@ function addCylinder(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
@@ -637,7 +656,7 @@ function addCylinder(t)
     local ts = t.texSize or vec2(1,1)
     local sc,si,sj,ec,ei,ej,a,o
     
-    if t.axis or t.axes or t.origin then
+    if t.axis or t.axes or t.origin or t.centre or t.center then
         if t.axis then
             a = t.axis
         elseif t.axes then
@@ -648,13 +667,14 @@ function addCylinder(t)
         if t.height then
             a = h*a:normalize()
         end
-        if t.origin then
-            sc,ec = t.origin - a/2,t.origin + a/2
+        if t.origin or t.centre or t.center then
+            local o = t.origin or t.centre or t.center
+            sc,ec = o - a/2,o + a/2
         end
     end
     sc = t.startCentre or t.startCenter or sc
     ec = t.endCentre or t.endCenter or ec
-    sc,ec,a = __threeFromTwo(sc,ec,a,vec3(0,0,0),vec3(0,h,0),vec3(0,h,0))
+    sc,ec,a = __threeFromTwo(sc,ec,a,vec3(0,-h/2,0),vec3(0,h/2,0),vec3(0,h,0))
     si = t.startWidth or t.startRadius or t.radius or 1
     sj = t.startHeight or t.startRadius or t.radius or 1
     ei = t.endWidth or t.endRadius or t.radius or 1
@@ -710,7 +730,7 @@ function addCylinder(t)
     sa = math.rad(sa)
     ea = math.rad(ea)
     da = math.rad(da)/n
-    o = t.origin or (sc + math.cos((sa+ea)/2)*si/2 + math.sin((sa+ea)/2)*sj/2 + ec + math.cos((sa+ea)/2)*ei/2 + math.sin((sa+ea)/2)*ej/2)/2
+    o = (sc + math.cos((sa+ea)/2)*si/2 + math.sin((sa+ea)/2)*sj/2 + ec + math.cos((sa+ea)/2)*ei/2 + math.sin((sa+ea)/2)*ej/2)/2
     local ss = 1 + math.floor((ends+1)/2)
     if solid then
         ss = ss + 2 
@@ -949,6 +969,21 @@ function addPyramid(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
@@ -1076,6 +1111,21 @@ function addBlock(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
@@ -1241,6 +1291,21 @@ function addSphere(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
@@ -1309,6 +1374,21 @@ function addSphereSegment(t)
         ret,m = true,t.mesh
     else
         ret,m = false,mesh()
+        if t.light and t.ambience then
+            m.shader = lighting()
+            if t.light:lenSqr() > 1 then
+                m.shader.light = t.light:normalize()
+            else
+                m.shader.light = t.light
+            end
+            m.shader.ambient = t.ambience
+            if t.texture then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+            t.light = vec3(0,0,0)
+        end
         if t.texture then
             if type(t.texture) == "string" then
                 m.texture = readImage(t.texture)
