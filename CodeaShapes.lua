@@ -204,7 +204,7 @@ function setup()
     --[1] plain coloured cube, no lighting, centred on 0 so we can rotate it
     --it looks pretty terrible, as you will see. You really need lighting or a texture image
     --NOTE - centre will usually be 0 if shapes are rotated, can we set this as default so it can be omitted?
-    shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light} --returns mesh
+    shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,basicLighting = true,ambience = .5} --returns mesh
 
     --NOTE - because the functions which add shapes, return multiple items, it isn't possible to use table.insert,
     --nor to define a table all in one go as a set of added shapes, eg
@@ -281,7 +281,7 @@ function draw()
 end
 --]==]
 
-local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder
+local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder, __initmesh
 
 --[[
 | Option       | Default                  | Description |
@@ -297,34 +297,7 @@ local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphe
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
 --]]
 function addJewel(t)
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or vec3(0,0,0)
@@ -347,11 +320,20 @@ function addJewel(t)
     if p > m.size - 12*n then
         m:resize(p + 12*n-1)
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
-    local np = __doJewel(m,p,n,o,a,c,to,ts,l)
+    local np = __doJewel(m,p,n,o,a,c,to,ts,l,am)
     if ret then
         return m,p,np
     else
@@ -372,7 +354,7 @@ to offset of texture region (vec2)
 ts size of texture region (vec2)
 l light vector
 --]]
-function __doJewel(m,p,n,o,a,col,to,ts,l)
+function __doJewel(m,p,n,o,a,col,to,ts,l,am)
     local th = math.pi/n
     local cs = math.cos(th)
     local sn = math.sin(th)
@@ -390,7 +372,7 @@ function __doJewel(m,p,n,o,a,col,to,ts,l)
         c,d = cs*c + sn*d,-sn*c + cs*d
         tc,td = cs*tc + sn*td,-sn*tc + cs*td
     end
-    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true,true,l)
+    return __doSuspension(m,p,2*n,o,{o+a[1],o-a[1]},pol,tex,col,to,ts,true,true,l,am)
 end
 
 --[[
@@ -410,11 +392,11 @@ f faceted
 cl closed curve or not
 l light vector
 --]]
-function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f,cl,l)
+function __doSuspension(m,p,n,o,a,v,t,col,to,ts,f,cl,l,am)
     local tu
     for i=1,2 do
         tu = to+vec2(ts.x*(i*.5-.25),ts.y*.5)
-        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f,cl,l)
+        p = __doCone(m,p,n,o,a[i],v,t,col,tu,ts,f,cl,l,am)
     end
     return p
 end
@@ -437,25 +419,24 @@ f faceted or not
 cl closed curve or not
 l light vector
 --]]
-function __doCone(m,p,n,o,a,v,t,col,to,ts,f,cl,l)
+function __doCone(m,p,n,o,a,v,t,col,to,ts,f,cl,l,am)
     if f then
         if cl then
-            return __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
+            return __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l,am)
         else
-            return __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
+            return __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l,am)
         end
     else
         if cl then
-            return __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
+            return __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l,am)
         else
-            return __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
+            return __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l,am)
         end
     end
 end
 
-function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
-    local j,nml,c,ll
-    ll = l:len()
+function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l,am)
+    local j,nml,c
     for k=1,n do
         j = k%n + 1
         nml = (v[k] - a):cross(v[j] - a)
@@ -463,16 +444,15 @@ function __doFacetedClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
             nml = -nml
         end
         nml = nml:normalize()
-        c = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nml))-ll)
+        c = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nml)))
         __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
-    local j,nml,c,ll
-    ll = l:len()
+function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l,am)
+    local j,nml,c
     for k=1,n-1 do
         j = k + 1
         nml = (v[k] - a):cross(v[j] - a)
@@ -480,44 +460,43 @@ function __doFacetedOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
             nml = -nml
         end
         nml = nml:normalize()
-        c = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nml))-ll)
+        c = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nml)))
         __addTriangle(m,p,v[j],v[k],a,c,c,c,nml,nml,nml,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l)
-    local j,nmla,nmlb,nmlc,cc,ca,ll,nb,cb
-    ll = l:len()
+function __doSmoothClosedCone(m,p,n,o,a,v,t,col,to,ts,l,am)
+    local j,nmla,nmlb,nmlc,cc,ca,nb,cb
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,v[n],a,v[2])
-    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
+    cc = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nmlc)))
     nb = vec3(0,0,0)
     for k=1,n do
         j = k%n + 1
         nb = nb + __discreteNormal(v[j],o,v[k],a,v[j%n+1])
     end
     nb = nb:normalize()
-    cb = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nb))-ll)
+    cb = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nb)))
     for k=1,n do
         j = k%n + 1
         nmla = nmlc
         ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
+        cc = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nmlc)))
         __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     return p
 end
 
-function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
+function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l,am)
     local j,nmla,nmlb,nmlc,cc,ca,ll,nb,cb
     ll = l:len()
     nmlb = vec3(0,0,0)
     nmlc = __discreteNormal(v[1],o,a,v[2])
-    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
+    cc = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nmlc)))
     nb = vec3(0,0,0)
     for k=1,n-2 do
         j = k + 1
@@ -525,20 +504,20 @@ function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l)
     end
     nb = nb + __discreteNormal(v[n],o,v[n-1],a)
     nb = nb:normalize()
-    cb = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nb))-ll)
+    cb = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nb)))
     for k=1,n-2 do
         j = k + 1
         nmla = nmlc
         ca = cc
         nmlc = __discreteNormal(v[j],o,v[k],a,v[j%n+1])
-        cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
+        cc = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nmlc)))
         __addTriangle(m,p,v[j],v[k],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[j],to+t[k],to)
         p = p + 3
     end
     nmla = nmlc
     ca = cc
     nmlc = __discreteNormal(v[n],o,v[n-1],a)
-    cc = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nmlc))-ll)
+    cc = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nmlc)))
     __addTriangle(m,p,v[n],v[n-1],a,cc,ca,cb,nmlc,nmla,nmlb,to+t[n],to+t[n-1],to)
     return p + 3
 end
@@ -559,7 +538,7 @@ f faceted or not
 cl closed curve or not
 l light vector
 --]]
-function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl,l)
+function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl,l,am)
     local a,b,r = vec3(0,0,0),vec2(0,0),0
     for k,u in ipairs(v) do
         a = a + u
@@ -573,7 +552,7 @@ function __doPoly(m,p,n,o,v,t,col,to,ts,f,cl,l)
     for k=1,r do
         t[k] = t[k] - b
     end
-    return __doCone(m,p,n,o,a,v,t,col,to+b,ts,f,cl,l)
+    return __doCone(m,p,n,o,a,v,t,col,to+b,ts,f,cl,l,am)
 end
 
 --[[
@@ -603,34 +582,7 @@ Other directions (if needed) are found by taking orthogonal vectors to this axis
 										
 function addCylinder(t)
     t = t or {}
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local ip = p
@@ -646,9 +598,18 @@ function addCylinder(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
     local r = t.radius or 1
     local h = t.height or 1
@@ -768,22 +729,22 @@ function addCylinder(t)
         m:resize(p-1+size)
     end
     n = n + 1
-    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f,closed,l)
+    p = __doCylinder(m,p,n,o,u,v,tu,tv,col,f,closed,l,am)
     to = to + ts/2
     if solid and not closed then
         local tex = {-ts/2,vec2(ts.x/2,-ts.y/2),ts/2,vec2(-ts.x/2,ts.y/2)}
         for i=1,2 do
             to.x = to.x + ts.x
-            p = __doPoly(m,p,4,o,cnrs[i],tex,col,to,ts,f,true,l)
+            p = __doPoly(m,p,4,o,cnrs[i],tex,col,to,ts,f,true,l,am)
         end
     end
     if ends%2 == 1 then
         to.x = to.x + ts.x
-        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f,closed,l)
+        p = __doCone(m,p,n,o,sc,u,tw,col,to,ts,f,closed,l,am)
     end
     if ends >= 2 then
         to.x = to.x + ts.x
-        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f,closed,l)
+        p = __doCone(m,p,n,o,ec,v,tw,col,to,ts,f,closed,l,am)
     end
     if ret then
         return m,ip, p
@@ -809,23 +770,23 @@ f faceted
 cl closed
 l light vector
 --]]
-function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl,l)
+function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl,l,am)
     if f then
         if cl then
-            return __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
+            return __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
         else
-            return __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
+            return __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
         end
     else
         if cl then
-            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
+            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
         else
-            return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
+            return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
         end
     end
 end
 
-function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
+function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
     local i,j,nv,nu,cu,cv,ll
     ll = l:len()
     for k=1,n do
@@ -838,8 +799,8 @@ function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        cv = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv))-ll)
-        cu = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu))-ll)
+        cv = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv)))
+        cu = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu)))
         __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
@@ -848,7 +809,7 @@ function __doFacetedClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
     return p
 end
 
-function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
+function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
     local i,j,nv,nu,cu,cv,ll
     ll = l:len()
     for k=1,n-1 do
@@ -861,8 +822,8 @@ function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
         if nv:dot(v[k]-o) < 0 then
             nv = -nv
         end
-        cv = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv))-ll)
-        cu = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu))-ll)
+        cv = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv)))
+        cu = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu)))
         __addTriangle(m,p,v[j],v[k],u[j],cv,cv,cu,nv,nv,nu,vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv,cu,cu,nv,nu,nu,vt[k],ut[j],ut[k])
@@ -871,21 +832,20 @@ function __doFacetedOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
     return p
 end
 
-function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
-    local i,j,nv,nu,cu,cv,ll
-    ll = l:len()
+function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
+    local i,j,nv,nu,cu,cv
     nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,v[n],u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,u[n],v[1],u[2])
-    cv[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[1]))-ll)
-    cu[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[1]))-ll)
+    cv[1] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv[1])))
+    cu[1] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[1])))
     for k=1,n do
         j = k%n + 1
         i = j%n + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        cv[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[j]))-ll)
-        cu[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[j]))-ll)
+        cv[j] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv[j])))
+        cu[j] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[j])))
         __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
@@ -894,21 +854,20 @@ function __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l)
     return p
 end
 
-function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
-    local i,j,nv,nu,cu,cv,ll
-    ll = l:len()
+function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
+    local i,j,nv,nu,cu,cv
     nv,nu,cv,cu = {},{},{},{}
     nv[1] = __discreteNormal(v[1],o,u[1],v[2])
     nu[1] = __discreteNormal(u[1],o,v[1],u[2])
-    cv[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[1]))-ll)
-    cu[1] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[1]))-ll)
+    cv[1] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv[1])))
+    cu[1] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[1])))
     for k=1,n-2 do
         j = k + 1
         i = j + 1
         nv[j] = __discreteNormal(v[j],o,v[k],u[j],v[i])
         nu[j] = __discreteNormal(u[j],o,u[k],v[j],u[i])
-        cv[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[j]))-ll)
-        cu[j] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[j]))-ll)
+        cv[j] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv[j])))
+        cu[j] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[j])))
         __addTriangle(m,p,v[j],v[k],u[j],cv[j],cv[k],cu[j],nv[j],nv[k],nu[j],vt[j],vt[k],ut[j])
         p = p + 3
         __addTriangle(m,p,v[k],u[j],u[k],cv[k],cu[j],cu[k],nv[k],nu[j],nu[k],vt[k],ut[j],ut[k])
@@ -916,8 +875,8 @@ function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l)
     end
     nv[n] = __discreteNormal(v[n],o,v[n-1],u[n])
     nu[n] = __discreteNormal(u[n],o,u[n-1],v[n])
-    cv[n] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nv[n]))-ll)
-    cu[n] = col:mix(color(0,0,0,col.a),1+math.max(0,l:dot(nu[n]))-ll)
+    cv[n] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nv[n])))
+    cu[n] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[n])))
     __addTriangle(m,p,v[n],v[n-1],u[n],cv[n],cv[n-1],cu[n],nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
     p = p + 3
     __addTriangle(m,p,v[n-1],u[n],u[n-1],cv[n-1],cu[n],cu[n-1],nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
@@ -964,34 +923,7 @@ Adds a pyramid to a mesh.
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
 --]]
 function addPyramid(t)
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or vec3(0,0,0)
@@ -1000,9 +932,18 @@ function addPyramid(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
     local as = t.aspect or 1
     local to = t.texOrigin or vec2(0,0)
@@ -1031,7 +972,7 @@ function addPyramid(t)
     if p > m.size - 6*n then
         m:resize(p + 6*n-1)
     end
-    local np = __doPyramid(m,p,n,o,a,c,to,ts,f,l)
+    local np = __doPyramid(m,p,n,o,a,c,to,ts,f,l,am)
     if ret then
         return m,p,np
     else
@@ -1053,7 +994,7 @@ ts texture size
 f faceted
 l light vector
 --]]
-function __doPyramid(m,p,n,o,a,col,to,ts,f,l)
+function __doPyramid(m,p,n,o,a,col,to,ts,f,l,am)
     local th = 2*math.pi/n
     local cs = math.cos(th)
     local sn = math.sin(th)
@@ -1069,7 +1010,7 @@ function __doPyramid(m,p,n,o,a,col,to,ts,f,l)
         c,d = cs*c + sn*d, -sn*c + cs*d
         tc,td = cs*tc + sn*td, -sn*tc + cs*td
     end
-    return __doSuspension(m,p,n,o+a[1]/2,{o+a[1],o},pol,tex,col,to,ts,f,true,l)
+    return __doSuspension(m,p,n,o+a[1]/2,{o+a[1],o},pol,tex,col,to,ts,f,true,l,am)
 end
 
 -- block faces are in binary order: 000, 001, 010, 011 etc
@@ -1106,34 +1047,7 @@ There are a few ways of specifying the dimensions of the "block".
 `block`.  This is a table of eight vertices defining the block.  The vertices are listed in binary order, in that if you picture the vertices of the standard cube of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
 --]]
 function addBlock(t)
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local c = t.colour or t.color or color(255, 255, 255, 255)
@@ -1148,9 +1062,18 @@ function addBlock(t)
         dt = 0
         ts.x = ts.x * 6
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
     local v
     if t.block then
@@ -1228,7 +1151,7 @@ function addBlock(t)
     if p > m.size - 36 then
         m:resize(p + 35)
     end
-    local np = __doBlock(m,p,f,v,c,to,ts,dt,l)
+    local np = __doBlock(m,p,f,v,c,to,ts,dt,l,am)
     if ret then
         return m,p,np
     else
@@ -1247,16 +1170,15 @@ ts size of this shape's segment of the texture
 dt step size for the texture tiling
 l light vector
 --]]
-function __doBlock(m,p,f,v,c,to,ts,dt,l)
-    local n,t,tv,ll
+function __doBlock(m,p,f,v,c,to,ts,dt,l,am)
+    local n,t,tv
     t = 0
     l = l / 2
-    ll = l:len()
     for k,w in ipairs(f) do
         n = (v[w[3]] - v[w[1]]):cross(v[w[2]] - v[w[1]]):normalize()
         for i,u in ipairs({1,2,3,2,3,4}) do
             m:vertex(p,v[w[u]])
-            m:color(p,c[w[u]]:mix(color(0,0,0,c[w[u]].a),1+math.max(0,l:dot(n))-ll))
+            m:color(p,c[w[u]]:mix(color(0,0,0,c[w[u]].a),am+(1-am)*math.max(0,l:dot(n))))
             m:normal(p,n)
             tv = BlockTex[u] + t*vec2(1/6,0)
             tv.x = tv.x * ts.x
@@ -1286,38 +1208,11 @@ Adds a sphere to a mesh.
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
 --]]
 function addSphere(t)
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local o = t.origin or t.centre or t.center or vec3(0,0,0)
-    local s = t.radius or t.size or 1
+    local s = t.size or 1
     local c = t.colour or t.color or color(255, 255, 255, 255)
     local n = t.number or 36
     local a = t.axes or {vec3(1,0,0),vec3(0,1,0),vec3(0,0,1)}
@@ -1328,15 +1223,24 @@ function addSphere(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
     if p > m.size - 12*n*(n-1) then
         m:resize(p+12*n*(n-1)-1)
     end
     local step = math.pi/n
-    local np = __doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts,l)
+    local np = __doSphere(m,p,o,a,0,step,n,0,step,2*n,c,f,to,ts,l,am)
     if ret then
         return m,p,np
     else
@@ -1369,39 +1273,12 @@ Specifying the segment can be done in a variety of ways.
 
 --]]
 function addSphereSegment(t)
-    local ret,m
-    if t.mesh then
-        ret,m = true,t.mesh
-    else
-        ret,m = false,mesh()
-        if t.light and t.ambience then
-            m.shader = lighting()
-            if t.light:lenSqr() > 1 then
-                m.shader.light = t.light:normalize()
-            else
-                m.shader.light = t.light
-            end
-            m.shader.ambient = t.ambience
-            if t.texture then
-                m.shader.useTexture = 1
-            else
-                m.shader.useTexture = 0
-            end
-            t.light = vec3(0,0,0)
-        end
-        if t.texture then
-            if type(t.texture) == "string" then
-                m.texture = readImage(t.texture)
-            else
-                m.texture = t.texture
-            end
-        end
-    end
+    local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
     local p = t.position or (m.size + 1)
     p = p + (1-p)%3
     local ip = p
     local o = t.origin or t.centre or t.center or vec3(0,0,0)
-    local s = t.radius or t.size or 1
+    local s = t.size or 1
     local c = t.colour or t.color or color(255, 255, 255, 255)
     local n = t.number or 36
     local solid = true
@@ -1453,9 +1330,18 @@ function addSphereSegment(t)
     if t.faceted ~= nil then
         f = t.faceted
     end
-    local l = t.light or vec3(0,0,0)
-    if l:lenSqr() > 1 then
-        l = l:normalize()
+    local l,am
+    if rl then
+        l = vec3(0,0,0)
+        am = 1
+    else
+        l = t.light or vec3(0,0,0)
+        if t.intensity then
+            l = l:normalize()*t.intensity
+        elseif l:lenSqr() > 1 then
+            l = l:normalize()
+        end
+        am = t.ambience or (1 - l:len())
     end
     local size = 6*nt*np
     if st == 0 then
@@ -1480,7 +1366,7 @@ function addSphereSegment(t)
     if p > m.size - size then
         m:resize(p-1+size)
     end
-    p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,l)
+    p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,l,am)
     if solid then
         to.x = to.x + ts.x
         local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
@@ -1500,7 +1386,7 @@ function addSphereSegment(t)
             table.insert(tex,ts)
             at = at + 1
         end
-        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l)
+        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l,am)
         to.x = to.x + ts.x
         v,tex,at = {},{},1
         if st ~= 0 then
@@ -1517,7 +1403,7 @@ function addSphereSegment(t)
             table.insert(tex,vec2(0,ts.y))
             at = at + 1
         end
-        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l)
+        p = __doPoly(m,p,nt+at,intl,v,tex,c,to,ts,f,true,l,am)
         to = to + ts/2
         if st ~= 0 then
             to.x = to.x + ts.x
@@ -1526,7 +1412,7 @@ function addSphereSegment(t)
                 table.insert(v,o+math.sin(st)*math.cos(sp+k*dp)*a[1] + math.sin(st)*math.sin(sp+k*dp)*a[2] + math.cos(st)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
-            p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false,l)
+            p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false,l,am)
         end
         if et < math.pi then
             to.x = to.x + ts.x
@@ -1535,7 +1421,7 @@ function addSphereSegment(t)
                 table.insert(v,o+math.sin(et)*math.cos(sp+k*dp)*a[1] + math.sin(et)*math.sin(sp+k*dp)*a[2] + math.cos(et)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
-            p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false,l)
+            p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false,l,am)
         end
     end
     if ret then
@@ -1564,9 +1450,8 @@ to offset for this shape's segment of the texture
 ts size of this shape's segment of the texture
 l light vector
 --]]
-function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
+function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll,am)
     local theta,ptheta,phi,pphi,ver,et,ep,tx,l,tex,stt,ett,ln,nml
-    ln = ll:len()
     et = nt*dt/ts.y
     ep = np*dp/ts.x
     if st == 0 then
@@ -1606,7 +1491,7 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
                 else
                     nml = ver[k]:normalize()
                 end
-                m:color(p,c:mix(color(0,0,0,255),1+math.max(0,ll:dot(nml))-ln))
+                m:color(p,c:mix(color(0,0,0,255),am+(1-am)*math.max(0,ll:dot(nml))))
                 m:normal(p,nml)
                 m:texCoord(p,tex[k])
                 p = p + 1
@@ -1647,7 +1532,7 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll)
                     nml = ver[k]:normalize()
                 end
                 m:normal(p,nml)
-                m:color(p,c:mix(color(0,0,0,255),1+math.max(0,ll:dot(nml))-ln))
+                m:color(p,c:mix(color(0,0,0,255),am+(1-am)*math.max(0,ll:dot(nml))))
                 m:texCoord(p,tex[k])
                 p = p + 1
             end
@@ -1746,6 +1631,42 @@ function __orthogonalTo(v)
         return vec3(-v.z,0,v.x)
     end
     return vec3(v.y,-v.x,0)
+end
+
+--[[
+Initialise a mesh
+--]]
+function __initmesh(m,l,a,i,t,b)
+    local r,rl
+    if m then
+        r = true
+    else
+        r,m = false,mesh()
+        if l and a and not b then
+            rl = true
+            m.shader = lighting()
+            if i then
+                l = l:normalize()*i
+            elseif l:lenSqr() > 1 then
+                l = l:normalize()
+            end
+            m.shader.light = l
+            m.shader.ambient = a
+            if t then
+                m.shader.useTexture = 1
+            else
+                m.shader.useTexture = 0
+            end
+        end
+        if t then
+            if type(t) == "string" then
+                m.texture = readImage(t)
+            else
+                m.texture = t
+            end
+        end
+    end
+    return m,r,rl
 end
 
 --[[
