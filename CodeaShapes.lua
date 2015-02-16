@@ -1,199 +1,6 @@
 -- MeshShapes
 
--- Use this function to perform your initial setup
---[==[
-function setup()
-    -- extendMesh()
-    parameter.number("rot_x",0,360,0)
-    parameter.number("rot_y",0,360,0)
-    parameter.number("rot_z",0,360,0)
-    parameter.number("size",-1,2,0)
-    m = mesh()
-    -- [[
-    m.shader = lighting()
-    m.shader.ambient = .5
-    m.shader.light = vec3(0,5,-1):normalize()
-    m.shader.useTexture = 0
-    --]]
-    local w,h = spriteSize("Cargo Bot:Crate Blue 1")
-    img = image(10*w,h)
-    setContext(img)
-    spriteMode(CORNER)
-    sprite("Cargo Bot:Crate Red 1",0,0)
-    sprite("Cargo Bot:Crate Green 1",w,0)
-    sprite("Cargo Bot:Crate Blue 1",2*w,0)
-    sprite("Cargo Bot:Crate Yellow 1",3*w,0)
-    sprite("Cargo Bot:Crate Red 2",4*w,0)
-    sprite("Cargo Bot:Crate Green 2",5*w,0)
-    sprite("Cargo Bot:Crate Blue 2",6*w,0)
-    sprite("Cargo Bot:Crate Yellow 2",7*w,0)
-    sprite("Cargo Bot:Crate Red 3",8*w,0)
-    sprite("Cargo Bot:Crate Green 3",9*w,0)
-    setContext()
-    -- m.texture = img
-    local light = vec3(1,1,0)/3
-    --[[
-    print("Initial mesh size:", m.size)
-    print("Returned values of addJewel:", m:addJewel({
-        texOrigin = vec2(0,0),
-        texSize = vec2(.2,1),
-        light = light
-    }))
-    print("Returned values of addPyramid:", m:addPyramid({
-        texOrigin = vec2(0,0),
-        texSize = vec2(.2,1),
-        origin = vec3(0,2,0),
-        height = 2,
-        sides = 30,
-        faceted = false,
-        light = light
-    }))
-    print("Returned values of addPyramid:", m:addPyramid({
-        texOrigin = vec2(0,0),
-        texSize = vec2(.2,1),
-        origin = vec3(2,2,0),
-        sides = 30,
-        height = 2,
-        faceted = true,
-        light = light
-    }))
-    print("Returned values of addBlock:", m:addBlock({
-        centre = vec3(2,0,0),
-        size = 2,
-        texOrigin = vec2(.2,0),
-        colour = color(255, 255, 255, 255),
-        texSize = vec2(.6,1),
-        light = light
-    }))
-    print("Returned values of addBlock:", m:addBlock({
-        centre = vec3(6,0,0),
-        size = 2,
-        texOrigin = vec2(.2,0),
-        texSize = vec2(.1,1),
-        colour = color(255, 255, 255, 255),
-        singleImage = true,
-        light = light
-    }))
-    print("Returned values of addSphereSegment:", m:addSphereSegment({
-        origin = vec3(-4,0,0),
-        texOrigin = vec2(0,0),
-        texSize = vec2(.5,1),
-        colour = color(255, 255, 255, 255),
-        startLatitude = 45,
-        deltaLatitude = 90,
-        startLongitude = 45,
-        deltaLongitude = 90,
-        number = 6,
-        faceted = true,
-        light = light
-    }))
-    print("Returned values of addSphere:", m:addSphere({
-        origin = vec3(-2,0,0),
-        texOrigin = vec2(0.8,0),
-        texSize = vec2(.1,1),
-        colour = color(255, 255, 255, 255),
-        number = 6,
-    -- faceted = true,
-        light = light
-    }))
-    print("Returned values of addSphereSegment:", m:addSphereSegment({
-        origin = vec3(4,0,0),
-        texOrigin = vec2(0.7,0),
-        texSize = vec2(.3,1),
-        colour = color(255, 255, 255, 255),
-        incoming = vec3(1,1,0),
-        outgoing = vec3(0,0,1),
-        faceted = true,
-        number = 6,
-        light = light
-    }))
-    --]]
-    print("Returned values of addCylinder:", m:addCylinder({
-    -- origin = vec3(4,2,0),
-        texOrigin = vec2(0,0),
-        texSize = vec2(.3,1),
-        colour = color(255, 255, 255, 255),
-    -- startRadius = .5,
-    -- endRadius = 1,
-    -- axis = vec3(0,1,0),
-    -- faceted = false,
-        number = 15,
-        height = 2,
-    -- ends = 3,
-        light = light
-    }))
-    --[[
-    print("Returned values of addCylinder:", m:addCylinder({
-        startCentre = vec3(6,2,0),
-        endCentre = vec3(4,4,0),
-        texOrigin = vec2(0,0),
-        texSize = vec2(.1,1),
-        colour = color(255, 255, 255, 255),
-        startRadius = .5,
-        endRadius = 1,
-        axes = {vec3(1,0,0),vec3(0,1,0),vec3(0,0,1)},
-        origin = vec3(4,3,0),
-        faceted = false,
-        number = 15,
-        height = 0,
-        startAngle = 90,
-        deltaAngle = 180,
-        light = light
-    }))
-    print("Returned values of addCylinder:", m:addCylinder({
-        startCentre = vec3(-4,2,0),
-        texOrigin = vec2(0,0),
-        texSize = vec2(.5,1),
-        colour = color(255, 255, 255, 255),
-        startRadius = .5,
-        endRadius = 1,
-        axis = vec3(0,1,0),
-        faceted = false,
-        number = 15,
-        height = 2,
-        startAngle = 90,
-        deltaAngle = 180,
-        solid = true,
-        light = light
-    }))
-    print("Returned values of addSphereSegment:", m:addSphereSegment({
-    -- origin = vec3(-2,2,0),
-    centre = vec3(0,0,0),
-        texOrigin = vec2(0.7,0),
-        texSize = vec2(.3,1),
-        colour = color(255, 251, 0, 255),
-    -- faceted = true,
-        number = 6,
-    size = 15,
-    -- startLatitude=0,deltaLatitude=180,
-        startLongitude=30,deltaLongitude=100,
-    -- light = light
-    }))
-    --]]
-    print("Final mesh size:",m.size)
-end
-
--- This function gets called once every frame
-function draw()
-    -- This sets a dark background color 
-    background(40, 40, 50)
-    sprite(img)
-    -- This sets the line thickness
-    strokeWidth(5)
-    camera(0,0,20,0,0,0,0,1,0)
-    perspective(45)
-    rotate(rot_z,0,0,1)
-    rotate(rot_y,0,1,0)
-    rotate(rot_x,1,0,0)
-    scale(10^size)
-    -- Do your drawing here
-    if m.shader then
-        m.shader.invModel = modelMatrix():inverse():transpose()
-    end
-    m:draw()
-end
---]==]
--- [==[
+displayMode(FULLSCREEN)
 function setup()
     --define light source
     light=vec3(1,.5,0)
@@ -203,61 +10,49 @@ function setup()
     
     --[1] plain coloured cube, no lighting, centred on 0 so we can rotate it
     --it looks pretty terrible, as you will see. You really need lighting or a texture image
-    --NOTE - centre will usually be 0 if shapes are rotated, can we set this as default so it can be omitted?
-    shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,basicLighting = true,ambience = .5} --returns mesh
-
-    --NOTE - because the functions which add shapes, return multiple items, it isn't possible to use table.insert,
-    --nor to define a table all in one go as a set of added shapes, eg
-    --shapes={addCube{...},addPyramid{...}...}
-    --this is going to cause confusion. Are the extra items necessary? If so, why not attach them to the
-    --mesh as properties so we only have to return one item, the mesh
+    shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255)} --returns mesh
     
-    --[2] same cube again, with lighting (which we'll add after we've created all the objects)
-    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5} --no change so far
+    --[2] same cube again, with non-shader lighting
+    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5,basicLighting = true}
     
-    --[3] a block with different shaped sides, with a texture image
+    --[3] same cube again, with shader lighting
+    shapes[3]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5}
+    
+    --[4] a block with different shaped sides, with a texture image
     local brick=readImage("Platformer Art:Block Brick"):copy(5,5,60,60) --crop brick picture to remove edges
-    shapes[3]=addBlock{center=vec3(0,0,0),width=20,depth=40,height=10,texture=brick,light=light,ambience=.5}
+    shapes[4]=addBlock{center=vec3(0,0,0),width=20,depth=40,height=10,texture=brick,light=light,ambience=.5}
     
-    --NOTE --the library class breaks if you pass through an image name
-    --it should load the image itself if it needs to, and set the mesh texture as well
-    --it should also figure out whether the image is 1x1 or 6x1
-    --this is the code I added to do this, for cubes
-    --for other shapes, I added the same code without the line that checks texture width
-    --[[
-    if t.texture then
-        if type(t.texture)=="string" then t.texture=readImage(t.texture) end
-        if t.texture.width<6*t.texture.height then t.singleImage=true end
-        m.texture=t.texture
-    end
-    --]]
+    --[5] a sphere
+    shapes[5]=addSphere{centre=vec3(0,0,0),size=15,texture="Cargo Bot:Starry Background",light=light,ambience=.5} 
     
-    --[4] a sphere
-    --NOTE - I altered the library code to read the image, as per note above)
-    shapes[4]=addSphere{centre=vec3(0,0,0),size=15,texture="Cargo Bot:Starry Background",light=light,ambience=.5} 
-    
-    --[5] a segment of a sphere
-    shapes[5]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(222, 191, 43, 255),
+    --[6] a segment of a sphere
+    shapes[6]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(222, 191, 43, 255),
         startLongitude=30,deltaLongitude=100,light=light,ambience=.5} 
     
-    --[6] a jewel
-    shapes[6]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
+    --[7] a segment of a sphere
+    shapes[7]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(43, 221, 196, 255),startLongitude=30,deltaLongitude=220,startLatitude=45,deltaLatitude=60,light=light,ambience=.5} 
     
-    --[7] a pyramid
-    shapes[7]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
+    --[8] a jewel
+    shapes[8]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
     
-    --[8] a cylinder, both ends open
-    shapes[8]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light,ambience=.5}
+    --[9] a pyramid
+    shapes[9]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
     
-    --[9] a tapering cylinder, one end open, smooth surface
-    shapes[9]=addCylinder{centre=vec3(0,0,0),height=20,startRadius=15,endRadius=5,
+    --[10] a cylinder, both ends open
+    shapes[10]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light,ambience=.5}
+    
+    --[11] a cylinder, both ends open
+    shapes[11]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(107, 59, 108, 255),light=light,ambience=.5,faceted=false,size=20}
+    
+    --[12] a tapering cylinder, one end open, smooth surface
+    shapes[12]=addCylinder{centre=vec3(0,0,0),height=20,startRadius=15,endRadius=5,
         faceted=false,ends=1,color=color(114, 95, 183, 255),light=light,ambience=.5}    
     
     --set positions of shapes on screen
     local gap=50 --spacing between shapes  on screen
-    for i=1,9 do
-        local a,b=math.modf((i-1)/3)
-        shapes[i].pos=vec3(a-1,b*3-1,0)*gap
+    for i=1,12 do
+        local a,b=math.modf((i-1)/4)
+        shapes[i].pos=vec3(a-1,b*4-1.5,0)*gap
     end
 
     --set up some simple rotation to show the result
@@ -279,7 +74,6 @@ function draw()
     end
     rot=rot+deltaRot
 end
---]==]
 
 local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder, __initmesh
 
@@ -293,7 +87,7 @@ local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphe
 | `aspect`       | 1                        | The ratio of the height to the diameter of the gem. |
 | `size`         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
 | `colour`/`color` | white                  | The colour of the jewel. |
-| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
+| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
 | `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
 --]]
 function addJewel(t)
@@ -779,7 +573,7 @@ function __doCylinder(m,p,n,o,u,v,ut,vt,col,f,cl,l,am)
         end
     else
         if cl then
-            return __doSmoothClosedCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
+            return __doSmoothClosedCylinder(m,p,n-1,o,u,v,ut,vt,col,l,am)
         else
             return __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
         end
