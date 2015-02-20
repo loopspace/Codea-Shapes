@@ -1,19 +1,49 @@
 -- MeshShapes
+--[[
+** Introduction
+The setup and draw functions below create some shapes, to show how it's done. The best way to get started is to play with the code to see what happens when you change things. You should also look at the library code underneath, because there are extra features documented there for each shape.
+
+Queries or bugs: to LoopSpace on the Codea forum
+
+Instructions and hints follow (don't be put off by the fact you have to read something, it's not hard)
+
+** Passing shape parameters **
+Each shape has a number of named parameters (inputs). You generally only need to use the ones you want. Each library function has a detailed description above it, telling you what the parameters are, and what they are for.
+
+Note that in order to pass through named parameters, they need to be in a table, like so
+   functionName({a=1,b=2,c=3}) 
+and, if you are only passing through one table and nothing else, you can leave off the round brackets if you like.
+   functionName{a=1,b=2,c=3} 
+and that's what we've done below when creating shapes.
+
+** Lighting **
+3D shapes usually need lighting or textures. To include light and shade, you set the direction of the light (see setup function below), and pass it in the "light" parameter, along with "ambience", which is the minimum brightness of the object (0-1).
+
+The code has two lighting options. The default uses a shader (the strange code at the bottom of this page), and requires a special line of code in the draw function that does strange things to matrices. 
+
+There is also a basic option that doesn't require the shader or the line of code in draw. To set it, just include
+basicLighting=true as a parameter.You will see examples of this below. Try both.
+
+** Help! I don't know 3D.
+3D doesn't have to be scary. The Codea forum has links to explanations and tutorials, and ask if you get stuck. You can also use the code below as a starting point.
+--]]
 
 displayMode(FULLSCREEN)
 function setup()
-    --define light source
+    --define direction of light source - this is the direction light is coming from, 
+    --ie if you draw a line from here to 0,0,0, that is the direction of the light
     light=vec3(1,.5,0)
     --create shapes using colours and images
     --we'll store them in separate meshes, because these shapes will usually be moved/rotated individually
     shapes={}
-    
+     
     --[1] plain coloured cube, no lighting, centred on 0 so we can rotate it
     --it looks pretty terrible, as you will see. You really need lighting or a texture image
     shapes[1]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255)} --returns mesh
     
-    --[2] same cube again, with non-shader lighting
-    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5,basicLighting = true}
+    --[2] same cube again, with basic lighting
+    shapes[2]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),
+        light=light,ambience=.5,basicLighting = true} --the last parameter asks for basic lighting
     
     --[3] same cube again, with shader lighting
     shapes[3]=addBlock{center=vec3(0,0,0),size=20,color=color(255, 161, 0, 255),light=light,ambience=.5}
@@ -30,7 +60,8 @@ function setup()
         startLongitude=30,deltaLongitude=100,light=light,ambience=.5} 
     
     --[7] a segment of a sphere
-    shapes[7]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(43, 221, 196, 255),startLongitude=30,deltaLongitude=220,startLatitude=45,deltaLatitude=60,light=light,ambience=.5} 
+    shapes[7]=addSphereSegment{centre=vec3(0,0,0),size=15,color=color(43, 221, 196,255),
+        startLongitude=30,deltaLongitude=220,startLatitude=45,deltaLatitude=60,light=light,ambience=.5} 
     
     --[8] a jewel
     shapes[8]=addJewel{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
@@ -39,43 +70,64 @@ function setup()
     shapes[9]=addPyramid{centre=vec3(0,0,0),size=20,color=color(203, 78, 188, 255),light=light,ambience=.5}
     
     --[10] a cylinder, both ends open
-    shapes[10]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),light=light,ambience=.5}
+    shapes[10]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(141, 203, 77, 255),
+            light=light,ambience=.5}
     
     --[11] a cylinder, both ends open
-    shapes[11]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(107, 59, 108, 255),light=light,ambience=.5,faceted=false,size=20}
+    shapes[11]=addCylinder{centre=vec3(0,0,0),height=20,radius=10,color=color(107, 59, 108, 255),
+            light=light,ambience=.5,faceted=false,size=20}
     
     --[12] a tapering cylinder, one end open, smooth surface
     shapes[12]=addCylinder{centre=vec3(0,0,0),height=20,startRadius=15,endRadius=5,
         faceted=false,ends=1,color=color(114, 95, 183, 255),light=light,ambience=.5}    
     
     --set positions of shapes on screen
+    --they will be drawn in these positions on the screen
+    --[[
+    4  8  12
+    3  7  11
+    2  6  10
+    1  5  9
+   --]]
     local gap=50 --spacing between shapes  on screen
     for i=1,12 do
         local a,b=math.modf((i-1)/4)
         shapes[i].pos=vec3(a-1,b*4-1.5,0)*gap
     end
 
-    --set up some simple rotation to show the result
-    rot=vec3(0,0,0)  deltaRot=vec3(1,-1.2,1.7)*.2
-    
+    --set up some simple rotation to make them spin
+    rot=vec3(0,0,0)  --current rotation (degrees)
+    deltaRot=vec3(1,-1.2,1.7)*.2  --change in rotation each time we draw
 end
 
 function draw()
     background(50)
-    perspective()
-    camera(0,0,250,0,0,0)
+    perspective()  --puts Codea in 3D mode
+    camera(0,0,250,0,0,0) --camera is 250 pixels back from 0, looking at (0,0,0)
     for _,s in pairs(shapes) do
         pushMatrix()
         translate(s.pos.x,s.pos.y,s.pos.z)
         rotate(rot.x,1,0,0) rotate(rot.y,0,1,0) rotate(rot.z,0,0,1)
+        --use this next line with all your objects that use lighting
         if s.shader then s.shader.invModel = modelMatrix():inverse():transpose() end
         s:draw()
         popMatrix()  
     end
-    rot=rot+deltaRot
+    rot=rot+deltaRot --change rotation
 end
 
-local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, __threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, __doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, __doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, __doSmoothClosedCylinder, __doSmoothOpenCylinder, __initmesh
+
+--- SHAPE LIBRARY STARTS HERE ------
+
+local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphere, 
+
+__threeFromTwo, __orthogonalTo, __doCylinder, __discreteNormal, __doCone, __doPoly, 
+
+__doFacetedClosedCone, __doFacetedOpenCone, __doSmoothClosedCone, 
+
+__doSmoothOpenCone, __doFacetedClosedCylinder, __doFacetedOpenCylinder, 
+
+__doSmoothClosedCylinder, __doSmoothOpenCylinder, __initmesh
 
 --[[
 | Option       | Default                  | Description |
@@ -85,10 +137,16 @@ local __doJewel, __doSuspension, __doPyramid, __doBlock, __addTriangle, __doSphe
 | `origin`       | `vec3(0,0,0)`            | The origin (or centre) of the shape. |
 | `axis`         | `vec3(0,1,0)`            | The axis specifies the direction of the jewel. |
 | `aspect`       | 1                        | The ratio of the height to the diameter of the gem. |
-| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
+| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the 
+
+centre to the apex of the jewel. |
 | `colour`/`color` | white                  | The colour of the jewel. |
-| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
-| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the 
+
+rectangle associated with this gem. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the 
+
+texture associated to this gem.
 --]]
 function addJewel(t)
     local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
@@ -197,7 +255,9 @@ end
 
 --[[
 A "cone" is formed by taking a curve in space and joining each of its points to an apex.
-If the original curve is made from line segments, the resulting cone has a natural triangulation which can be used to construct it as a mesh.
+If the original curve is made from line segments, the resulting cone has a natural triangulation 
+
+which can be used to construct it as a mesh.
 
 m mesh
 p position in mesh
@@ -317,7 +377,9 @@ function __doSmoothOpenCone(m,p,n,o,a,v,t,col,to,ts,l,am)
 end
 
 --[[
-This forms a surface which has boundary a given curve by forming a cone with the barycentre of the curve as its apex.
+This forms a surface which has boundary a given curve by forming a cone with the 
+
+barycentre of the curve as its apex.
 
 m mesh
 p position in mesh
@@ -357,15 +419,27 @@ end
 | `colour`/`color` | white | The colour of the shape. |
 | `faceted` | true | Whether to make it faceted or smooth. |
 | `ends` | `0` | Which ends to fill in (`0` for none, `1` for start, `2` for end, `3` for both) |
-| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this shape. |
-| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this shape. |
+| `texOrigin`    | `vec2(0,0)`              | If using a sprite sheet, this is the lower left corner of the 
+
+rectangle associated with this shape. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the 
+
+texture associated to this shape. |
 
 There are various ways to specify the dimensions of the cylinder.
 If given together, the more specific overrides the more general.
 
-`radius` and `height` (`number`s) can be combined with `axes` (table of three `vec3`s) to specify the dimensions, where the first axis vector lies along the cylinder.  The vector `origin` then locates the cylinder in space.
+`radius` and `height` (`number`s) can be combined with `axes` (table of three `vec3`s) to 
 
-`startCentre`/`startCenter` (a `vec3`), `startWidth` (`number` or `vec3`), `startHeight` (`number` or `vec3`), `startRadius` (`number`) specify the dimensions at the start of the cylinder (if numbers, they are taken with respect to certain axes).
+specify the dimensions, where the first axis vector lies along the cylinder.  The vector 
+
+`origin` then locates the cylinder in space.
+
+`startCentre`/`startCenter` (a `vec3`), `startWidth` (`number` or `vec3`), `startHeight` (`number` 
+
+or `vec3`), `startRadius` (`number`) specify the dimensions at the start of the cylinder (if
+
+numbers, they are taken with respect to certain axes).
 
 Similarly named options control the other end.
 
@@ -373,7 +447,9 @@ If axes are needed, these can be supplied via the `axes` option.
 If just the `axis` option is given (a single `vec3`), this is the direction along the cylinder.
 Other directions (if needed) are found by taking orthogonal vectors to this axis.
 --]]
-										
+                                    
+
+    
 function addCylinder(t)
     t = t or {}
     local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
@@ -485,7 +561,9 @@ function addCylinder(t)
     sa = math.rad(sa)
     ea = math.rad(ea)
     da = math.rad(da)/n
-    o = (sc + math.cos((sa+ea)/2)*si/2 + math.sin((sa+ea)/2)*sj/2 + ec + math.cos((sa+ea)/2)*ei/2 + math.sin((sa+ea)/2)*ej/2)/2
+    o = (sc + math.cos((sa+ea)/2)*si/2 + math.sin((sa+ea)/2)*sj/2 + ec + math.cos((sa+ea)/2)
+
+*ei/2 + math.sin((sa+ea)/2)*ej/2)/2
     local ss = 1 + math.floor((ends+1)/2)
     if solid then
         ss = ss + 2 
@@ -673,13 +751,17 @@ function __doSmoothOpenCylinder(m,p,n,o,u,v,ut,vt,col,l,am)
     cu[n] = col:mix(color(0,0,0,col.a),am+(1-am)*math.max(0,l:dot(nu[n])))
     __addTriangle(m,p,v[n],v[n-1],u[n],cv[n],cv[n-1],cu[n],nv[n],nv[n-1],nu[n],vt[n],vt[n-1],ut[n])
     p = p + 3
-    __addTriangle(m,p,v[n-1],u[n],u[n-1],cv[n-1],cu[n],cu[n-1],nv[n-1],nu[n],nu[n-1],vt[n-1],ut[n],ut[n-1])
+    __addTriangle(m,p,v[n-1],u[n],u[n-1],cv[n-1],cu[n],cu[n-1],nv[n-1],nu[n],nu[n-1],vt[n-1],ut
+
+[n],ut[n-1])
     return p+3
 end
 
 
 --[[
-This works out a normal vector for a vertex in a triangulated surface by taking an average of the triangles in which it appears.
+This works out a normal vector for a vertex in a triangulated surface by taking an average of 
+
+the triangles in which it appears.
 The normals are weighted by the reciprocal of the size of the corresponding triangle.
 
 a vertex under consideration
@@ -711,10 +793,16 @@ Adds a pyramid to a mesh.
 | `origin`       | `vec3(0,0,0)`            | The origin (or centre) of the shape. |
 | `axis`         | `vec3(0,1,0)`            | The axis specifies the direction of the jewel. |
 | `aspect`       | 1                        | The ratio of the height to the diameter of the gem. |
-| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the centre to the apex of the jewel. |
+| `size`         | the length of the axis   | The size of the jewel; specifically the distance from the 
+
+centre to the apex of the jewel. |
 | `colour`/`color` | `color(255, 255, 255, 255)` | The colour of the jewel. |
-| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the rectangle associated with this gem. |
-| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the texture associated to this gem.
+| `texOrigin`    | `vwc2(0,0)`              | If using a sprite sheet, this is the lower left corner of the 
+
+rectangle associated with this gem. |
+| `texSize`      | `vec2(1,1)`              | This is the width and height of the rectangle of the 
+
+texture associated to this gem.
 --]]
 function addPyramid(t)
     local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
@@ -826,7 +914,9 @@ Adds a block to a mesh.
 |:-------|:--------|:------------|
 | `mesh`                     | new mesh | Mesh to use to add shape to. |
 | `position`                 | end of mesh | Position in mesh to add shape at. |
-| `colour`/`color` | color(255, 255, 255, 255) | Colour or colours to use.  Can be a table of colours, one for each vertex of the block. |
+| `colour`/`color` | color(255, 255, 255, 255) | Colour or colours to use.  Can be a table of 
+
+colours, one for each vertex of the block. |
 | `faces`        | all         | Which faces to render |
 | `texOrigin`    | `vec2(0,0)` | Lower left corner of region on texture. |
 | `texSize`      | `vec2(1,1)` | Width and height of region on texture. |
@@ -834,11 +924,33 @@ Adds a block to a mesh.
 
 There are a few ways of specifying the dimensions of the "block".
 
-`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "block" by specifying a centre followed by the width, height, and depth of the cube (`size` sets all three).  These can be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "block" in the `x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by adding them to the centre so that the edges of the "block" end up parallel to the given vectors.
+`centre`/`center`, `width`, `height`, `depth`, `size`.  This defines the "block" by specifying a 
 
-`startCentre`/`startCenter`, `startWidth`, `startHeight`, `endCentre`/`endCenter`, `endWidth`, `endHeight`.  This defined the "block" by defining two opposite faces of the cube and then filling in the region in between.  The two faces are defined by their centres, widths, and heights.  The widths and heights can be numbers or `vec3`s exactly as above.
+centre followed by the width, height, and depth of the cube (`size` sets all three).  These can 
 
-`block`.  This is a table of eight vertices defining the block.  The vertices are listed in binary order, in that if you picture the vertices of the standard cube of side length `1` with one vertex at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the `+1` is because lua tables are 1-based).
+be `vec3`s or numbers.  If numbers, they correspond to the dimensions of the "block" in the 
+
+`x`, `y`, and `z` directions respectively.  If `vec3`s, then are used to construct the vertices by 
+
+adding them to the centre so that the edges of the "block" end up parallel to the given 
+
+vectors.
+
+`startCentre`/`startCenter`, `startWidth`, `startHeight`, `endCentre`/`endCenter`, `endWidth`, 
+
+`endHeight`.  This defined the "block" by defining two opposite faces of the cube and then 
+
+filling in the region in between.  The two faces are defined by their centres, widths, and 
+
+heights.  The widths and heights can be numbers or `vec3`s exactly as above.
+
+`block`.  This is a table of eight vertices defining the block.  The vertices are listed in binary 
+
+order, in that if you picture the vertices of the standard cube of side length `1` with one vertex 
+
+at the origin, the vertex with coordinates `(a,b,c)` is number a + 2b + 4c + 1 in the table (the 
+
+`+1` is because lua tables are 1-based).
 --]]
 function addBlock(t)
     local m,ret,rl = __initmesh(t.mesh, t.light, t.ambience, t.intensity, t.texture, t.basicLighting)
@@ -996,7 +1108,9 @@ Adds a sphere to a mesh.
 | `axes` | Standard axes | Axes of sphere. |
 | `size` | `1` | Radius of sphere (relative to axes). |
 | `colour`/`color` | `color(255, 255, 255, 255)` | Colour of sphere. |
-| `faceted` | `false` | Whether to render the sphere faceted or smoothed (not yet implemented). |
+| `faceted` | `false` | Whether to render the sphere faceted or smoothed (not yet 
+
+implemented). |
 | `number` | `36` | Number of steps to use to render sphere (twice this for longitude. |
 | `texOrigin` | `vec2(0,0)` | Origin of region in texture to use. |
 | `texSize` | `vec2(0,0)` | Width and height of region in texture to use.|
@@ -1053,7 +1167,9 @@ Adds a segment of a sphere to a mesh.
 | `axes` | Standard axes | Axes of sphere. |
 | `size` | `1` | Radius of sphere (relative to axes). |
 | `colour`/`color` | `color(255, 255, 255, 255)` | Colour of sphere. |
-| `faceted` | `false` | Whether to render the sphere faceted or smoothed (not yet implemented). |
+| `faceted` | `false` | Whether to render the sphere faceted or smoothed (not yet 
+
+implemented). |
 | `number` | `36` | Number of steps to use to render sphere (twice this for longitude. |
 | `solid` | `true` | Whether to make the sphere solid by filling in the internal sides. |
 | `texOrigin` | `vec2(0,0)` | Origin of region in texture to use. |
@@ -1061,7 +1177,11 @@ Adds a segment of a sphere to a mesh.
 
 Specifying the segment can be done in a variety of ways.
 
-`startLatitude`, `endLatitude`, `deltaLatitude`, `startLongitude`, `endLongitude`, `deltaLongitude` specify the latitude and longitude for the segment relative to given axes (only two of the three pieces of information for each need to be given).
+`startLatitude`, `endLatitude`, `deltaLatitude`, `startLongitude`, `endLongitude`, 
+
+`deltaLongitude` specify the latitude and longitude for the segment relative to given axes 
+
+(only two of the three pieces of information for each need to be given).
 
 `incoming` and `outgoing` define directions that the ends of the segment will point towards.
 
@@ -1163,7 +1283,9 @@ function addSphereSegment(t)
     p = __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,l,am)
     if solid then
         to.x = to.x + ts.x
-        local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
+        local intl = o + math.sin(st+nt*dt/2)*math.cos(sp+np*dp/2)*a[1] + math.sin(st+nt*dt/2)
+
+*math.sin(sp+dp*np/2)*a[2] + math.cos(st+nt*dt/2)*a[3]
         local v,tex,at = {},{},1
         local tl,tu = math.cos(st), math.cos(et) - math.cos(st)
         if st ~= 0 then
@@ -1172,7 +1294,9 @@ function addSphereSegment(t)
             at = at + 1
         end
         for k=0,nt do
-            table.insert(v,o+math.sin(st+k*dt)*math.cos(sp)*a[1] + math.sin(st+k*dt)*math.sin(sp)*a[2] + math.cos(st+k*dt)*a[3])
+            table.insert(v,o+math.sin(st+k*dt)*math.cos(sp)*a[1] + math.sin(st+k*dt)*math.sin(sp)
+
+*a[2] + math.cos(st+k*dt)*a[3])
             table.insert(tex,vec2(ts.x*(1-math.sin(st+k*dt)),ts.y*(math.cos(st+k*dt) - tl)/tu))
         end
         if et < math.pi then
@@ -1189,7 +1313,9 @@ function addSphereSegment(t)
             at = at + 1
         end
         for k=0,nt do
-            table.insert(v,o+math.sin(st+k*dt)*math.cos(ep)*a[1] + math.sin(st+k*dt)*math.sin(ep)*a[2] + math.cos(st+k*dt)*a[3])
+            table.insert(v,o+math.sin(st+k*dt)*math.cos(ep)*a[1] + math.sin(st+k*dt)*math.sin(ep)
+
+*a[2] + math.cos(st+k*dt)*a[3])
             table.insert(tex,vec2(ts.x*math.sin(st+k*dt),ts.y*(math.cos(st+k*dt) - tl)/tu))
         end
         if et < math.pi then
@@ -1203,7 +1329,8 @@ function addSphereSegment(t)
             to.x = to.x + ts.x
             v,tex = {},{}
             for k=0,np do
-                table.insert(v,o+math.sin(st)*math.cos(sp+k*dp)*a[1] + math.sin(st)*math.sin(sp+k*dp)*a[2] + math.cos(st)*a[3])
+                table.insert(v,o+math.sin(st)*math.cos(sp+k*dp)*a[1] + 
+                    math.sin(st)*math.sin(sp+k*dp)*a[2] + math.cos(st)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
             p = __doCone(m,p,np+1,intl,o + math.cos(st)*a[3],v,tex,c,to,ts,f,false,l,am)
@@ -1212,7 +1339,8 @@ function addSphereSegment(t)
             to.x = to.x + ts.x
             v,tex = {},{}
             for k=0,np do
-                table.insert(v,o+math.sin(et)*math.cos(sp+k*dp)*a[1] + math.sin(et)*math.sin(sp+k*dp)*a[2] + math.cos(et)*a[3])
+                table.insert(v,o+math.sin(et)*math.cos(sp+k*dp)*a[1] + 
+                    math.sin(et)*math.sin(sp+k*dp)*a[2] + math.cos(et)*a[3])
                 table.insert(tex,vec2(ts.x*math.sin(sp+k*dp)/2,ts.y*math.cos(sp+k*dp)/2))
             end
             p = __doCone(m,p,np+1,intl,o + math.cos(et)*a[3],v,tex,c,to,ts,f,false,l,am)
@@ -1274,7 +1402,8 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll,am)
                 {ptheta,pphi},
                 {theta,pphi}
             }) do
-                table.insert(ver,math.sin(v[1])*math.cos(v[2])*a[1] + math.sin(v[1])*math.sin(v[2])*a[2] + math.cos(v[1])*a[3])
+                table.insert(ver,math.sin(v[1])*math.cos(v[2])*a[1] + 
+                    math.sin(v[1])*math.sin(v[2])*a[2] + math.cos(v[1])*a[3])
                 table.insert(tex,to + vec2((v[2]-sp)/ep,(v[1]-st)/et))
             end
             for k = 1,6 do
@@ -1312,7 +1441,8 @@ function __doSphere(m,p,o,a,st,dt,nt,sp,dp,np,c,f,to,ts,ll,am)
                 {dt,phi},
                 {0,phi}
             }) do
-                table.insert(ver,math.sin(v[1])*math.cos(v[2])*a[1] + math.sin(v[1])*math.sin(v[2])*a[2] + (-1)^i*math.cos(v[1])*a[3])
+                table.insert(ver,math.sin(v[1])*math.cos(v[2])*a[1] + 
+                    math.sin(v[1])*math.sin(v[2])*a[2] + (-1)^i*math.cos(v[1])*a[3])
                 tx = vec2((v[2]-sp)/ep,i + (1-2*i)*(v[1]-st)/et)
                 tx.x = tx.x * ts.x
                 tx.y = tx.y * ts.y
@@ -1396,7 +1526,11 @@ function __addTriangle(m,p,a,b,c,d,e,f,g,h,i,j,k,l)
 end
 
 --[[
-Returns three things, u,v,w, with the property that u + w = v.  The input can be any number of the three together with three defaults to be used if not enough information is given (so if any two of the first three are given then that is enough information to determine the third).
+Returns three things, u,v,w, with the property that u + w = v.  The input can be any number of 
+
+the three together with three defaults to be used if not enough information is given (so if any 
+
+two of the first three are given then that is enough information to determine the third).
 --]]
 function __threeFromTwo(a,b,c,d,e,f)
     local u,v,w = a or d or 0, b or e or 1, c or f or 1
